@@ -11,27 +11,33 @@ import pdb
 class bwt:
   def __init__(self, seq):
     """
-    TODO: DM Document
+    A bwt class with a few auxilliary data structures i.e making it FM index
+
+    @seq: The seq in question
     """
     if not seq.endswith("$"): seq += "$" # append terminator if necessary
-    self.F = []
-    self.L = []
+    self.F = [] # rm
+    self.L = [] # rm
     self.tally = {}
-    self.suff_arr = []
+    self.suff_arr = [] # rm
+    self.lcp = []
 
     self.new(seq)
 
   def new(self, seq):
     """
-    TODO: DM
+    Create a new bwt, F, L and Tally arrays (All necessary attributes for FM index)
+
+    @param seq: the insertion seq
 
     """
     rotns = self.get_rotations(seq)
 
     # Malloc
-    self.F = [None]*len(rotns)
-    self.L = [None]*len(rotns)
-    self.suff_arr = [None]*len(rotns)
+    self.F = [None]*len(rotns) # First col of bwm
+    self.L = [None]*len(rotns) # Last col of bwm
+    self.suff_arr = [None]*len(rotns) # Suffix array
+    self.isa = [None]*len(rotns) # Inverse suffix array
     max_tally_len = 0 # length of the longest tally array length
 
     # Create tally
@@ -43,15 +49,26 @@ class bwt:
       self.L[idx] = rotn[0][-1]
       self.suff_arr[idx] = rotn[1]
 
-      # TODO: Add max tally length etc.
-
       if len(self.tally[self.L[idx]]) == 0:
+        self.tally[self.L[idx]].extend([0]*max_tally_len)
         self.tally[self.L[idx]].append(1)
+
       else:
+        self.tally[self.L[idx]].extend( [self.tally[self.L[idx]][-1]] *\
+                          (max_tally_len - len(self.tally[self.L[idx]])) )
+
         self.tally[self.L[idx]].append( self.tally[self.L[idx]][-1] + 1 )
 
+      max_tally_len = max(max_tally_len, len(self.tally[self.L[idx]]))
+
+    # Complete Tally arrays
+    for key in self.tally.keys():
+      self.tally[key].extend( [self.tally[key][-1]]* (max_tally_len-len(self.tally[key])) )
 
     del rotns # Free
+
+    self.get_new_lcp(seq)
+    self.get_new_isa()
 
   def get_rotations(self, seq):
     """
@@ -63,14 +80,60 @@ class bwt:
     tt = seq * 2
     return sorted([ (tt[i:i+len(seq)], i) for i in xrange(0, len(seq)) ])
 
-  def insert(self, ):
+  def get_new_isa(self, ):
+    """
+    Create the ISA (inverse suffix) data structure once knowledege of SA is
+    available
+    """
+    for i in xrange(len(self.suff_arr)):
+      self.isa[self.suff_arr[i]] = i
+
+
+  def get_new_lcp(self, seq):
+    """
+
+    @param seq: the sequence we will get lcp values for
+    """
+    for suff_idx in xrange(len(self.suff_arr)-1):
+      self.lcp.append( get_lcp(seq[self.suff_arr[suff_idx]:], seq[self.suff_arr[suff_idx+1]:]) )
+
+  def insert(self, c):
     pass
 
   def update(self, ):
     pass
 
+  def block_insert(self, block):
+    pass
+
+
+# ============================ Stand Alone Fns =============================== #
+def get_lcp(s1, s2):
+  """
+  Get the longest common prefix between two strings
+
+  @param s1: a string
+  @param s2: a string
+
+  @return: the length of the longest common prefix
+  """
+  for c in xrange(min(len(s1), len(s2))):
+    if s1[c] == s2[c]:
+      continue
+    else:
+      break # break out when the two aren't equal
+  return c
+
 def test():
-  bdubt = bwt("hello")
+  b = bwt("ctctgc")
+
+  print "F:", b.F
+  print "L:", b.L
+  print "SA:", b.suff_arr
+  print "Tally:", b.tally
+  print "LCP:", b.lcp
+  print "ISA:", b.isa
+
   pdb.set_trace()
 
 def main():
