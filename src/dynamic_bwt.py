@@ -5,9 +5,10 @@
 # Email: disa@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 
-import argparse
 import pdb
+import argparse
 from bwt import BWT
+from copy import copy
 
 class dBWT(BWT):
 
@@ -59,7 +60,7 @@ class dBWT(BWT):
     for key in self.tally.keys():
       self.tally[key].extend( [self.tally[key][-1]]* (max_tally_len-len(self.tally[key])) )
 
-  def insert_one(char, pos):
+  def insert_one(self, char, pos):
     """
     Insert a character at a certain position `pos` of the original sequence
 
@@ -69,36 +70,47 @@ class dBWT(BWT):
     assert isinstance(char, str), "Inserted item must be of char type"
     assert isinstance(pos, int), "Position on inserted item must be an int"
 
-    # TODO: Catch F up to new L
-
+    # TODO: Catch tally up after this!
     i = self.suff_arr.index(pos) # index where we will insert into bwt
 
     curr_i = self.L[i] # get old char at i
-    self.L[i] = char # new char at i inserted
+
+    lf_i = self.F.index(self.L[self.isa[pos]]) + self.tally[self.L[self.isa[pos]]][pos] - 1  # C_T_g + rank_g - 1 . Ferragina et al Opportunistic data structures .. (IIa)
+
+    if lf_i != len(self.L) - 1:
+      bottom_F = self.F[lf_i+1:]
+      bottom_L = self.L[lf_+1:]
+
+    self.L[i] = char # new char at i in L inserted (Ib)
+    self.F[lf_i] = char # new char at LF(i) inserted in F
+    self.L[lf_i] = curr_i # re-insert stored old char
+
+    if lf_i != len(self.L) - 1:
+      self.F[lf_i+1:] = bottom_F
+      self.L[lf_i+1:] = bottom_L
+
+    # TODO: Recompute self.tally
+    # Stage 4 -> Reorder
 
 
 
 
-
-
-
-
-  def build_LF(self, ):
-    self.Lanno = zip(self.L, range(len(self.L)))
-    self.Fanno = sorted(self.Lanno)
-
+  def reorder(self, i):
+    j = self.x # TODO
 
 def test():
   f = dBWT("CTCTGC", True)
+  f.insert_one("G", 2)
 
-  print "F:", f.F
-  print "L:", f.L
-  print "SA:", f.suff_arr
-  print "Tally:", f.tally
-  print "LCP:", f.lcp
-  print "ISA:", f.isa
+  #print "F:", f.F
+  #print "L:", f.L
+  #print "SA:", f.suff_arr
+  #print "Tally:", f.tally
+  #print "LCP:", f.lcp
+  #print "ISA:", f.isa
 
   pdb.set_trace()
+
 
 if __name__ == "__main__":
   test()
