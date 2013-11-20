@@ -7,141 +7,98 @@
 
 import argparse
 import pdb
+from bwt import BWT
 
-class bwt:
-  def __init__(self, seq):
+class dBWT(BWT):
+
+  def __init__(self, seq, isa=False):
+    super(dBWT, self).__init__(seq)
+
+    self.tally = dict()
+    self.build_tallies()
+
+    if isa:
+      self.build_isa()
+    else: self.isa = []
+
+  def build_isa(self,):
+    assert len(self.suff_arr) != 0, "The suffix array must be build first"
+
+    self.isa = [None]*len(self.suff_arr)
+
+    for i in xrange(len(self.suff_arr)):
+      self.isa[self.suff_arr[i]] = i
+
+  def get_isa(self, ):
     """
-    A bwt class with a few auxilliary data structures i.e making it FM index
-
-    @seq: The seq in question
+    Create the ISA (inverse suffix) data structure once knowledege of SA is
+    available
     """
-    if not seq.endswith("$"): seq += "$" # append terminator if necessary
-    self.F = [] # rm
-    self.L = [] # rm
-    self.tally = {}
-    self.suff_arr = [] # rm
-    self.lcp = []
+    return self.isa
 
-    self.new(seq)
-
-  def new(self, seq):
-    """
-    Create a new bwt, F, L and Tally arrays (All necessary attributes for FM index)
-
-    @param seq: the insertion seq
-
-    """
-    rotns = self.get_rotations(seq)
-
-    # Malloc
-    self.F = [None]*len(rotns) # First col of bwm
-    self.L = [None]*len(rotns) # Last col of bwm
-    self.suff_arr = [None]*len(rotns) # Suffix array
-    self.isa = [None]*len(rotns) # Inverse suffix array
+  def build_tallies(self, ):
     max_tally_len = 0 # length of the longest tally array length
 
     # Create tally
-    for c in "".join(set(seq)):
-      self.tally[c] = []
+    for c in self.L:
+      if not self.tally.has_key(c): self.tally[c] = []
 
-    for idx, rotn in enumerate(rotns):
-      self.F[idx] = rotn[0][0]
-      self.L[idx] = rotn[0][-1]
-      self.suff_arr[idx] = rotn[1]
-
-      if len(self.tally[self.L[idx]]) == 0:
-        self.tally[self.L[idx]].extend([0]*max_tally_len)
-        self.tally[self.L[idx]].append(1)
+      if len(self.tally[c]) == 0:
+        self.tally[c].extend([0]*max_tally_len)
+        self.tally[c].append(1)
 
       else:
-        self.tally[self.L[idx]].extend( [self.tally[self.L[idx]][-1]] *\
-                          (max_tally_len - len(self.tally[self.L[idx]])) )
+        self.tally[c].extend( [self.tally[c][-1]] *\
+                          (max_tally_len - len(self.tally[c])) )
 
-        self.tally[self.L[idx]].append( self.tally[self.L[idx]][-1] + 1 )
+        self.tally[c].append( self.tally[c][-1] + 1 )
 
-      max_tally_len = max(max_tally_len, len(self.tally[self.L[idx]]))
+      max_tally_len = max(max_tally_len, len(self.tally[c]))
 
     # Complete Tally arrays
     for key in self.tally.keys():
       self.tally[key].extend( [self.tally[key][-1]]* (max_tally_len-len(self.tally[key])) )
 
-    del rotns # Free
-
-    self.get_new_lcp(seq)
-    self.get_new_isa()
-
-  def get_rotations(self, seq):
+  def insert_one(char, pos):
     """
-    Get a list of all rotations of a string
+    Insert a character at a certain position `pos` of the original sequence
 
-    @param seq: The input string
-    @return: A list of rotations of input string seq
+    @param char: the character to insert
+    @param pos: the index of the original string where the character is to be inserted
     """
-    tt = seq * 2
-    return sorted([ (tt[i:i+len(seq)], i) for i in xrange(0, len(seq)) ])
+    assert isinstance(char, str), "Inserted item must be of char type"
+    assert isinstance(pos, int), "Position on inserted item must be an int"
 
-  def get_new_isa(self, ):
-    """
-    Create the ISA (inverse suffix) data structure once knowledege of SA is
-    available
-    """
-    for i in xrange(len(self.suff_arr)):
-      self.isa[self.suff_arr[i]] = i
+    # TODO: Catch F up to new L
 
+    i = self.suff_arr.index(pos) # index where we will insert into bwt
 
-  def get_new_lcp(self, seq):
-    """
-
-    @param seq: the sequence we will get lcp values for
-    """
-    for suff_idx in xrange(len(self.suff_arr)-1):
-      self.lcp.append( get_lcp(seq[self.suff_arr[suff_idx]:], seq[self.suff_arr[suff_idx+1]:]) )
-
-  def insert(self, c):
-    pass
-
-  def update(self, ):
-    pass
-
-  def block_insert(self, block):
-    pass
+    curr_i = self.L[i] # get old char at i
+    self.L[i] = char # new char at i inserted
 
 
-# ============================ Stand Alone Fns =============================== #
-def get_lcp(s1, s2):
-  """
-  Get the longest common prefix between two strings
 
-  @param s1: a string
-  @param s2: a string
 
-  @return: the length of the longest common prefix
-  """
-  for c in xrange(min(len(s1), len(s2))):
-    if s1[c] == s2[c]:
-      continue
-    else:
-      break # break out when the two aren't equal
-  return c
+
+
+
+
+  def build_LF(self, ):
+    self.Lanno = zip(self.L, range(len(self.L)))
+    self.Fanno = sorted(self.Lanno)
+
 
 def test():
-  b = bwt("ctctgc")
+  f = dBWT("CTCTGC", True)
 
-  print "F:", b.F
-  print "L:", b.L
-  print "SA:", b.suff_arr
-  print "Tally:", b.tally
-  print "LCP:", b.lcp
-  print "ISA:", b.isa
+  print "F:", f.F
+  print "L:", f.L
+  print "SA:", f.suff_arr
+  print "Tally:", f.tally
+  print "LCP:", f.lcp
+  print "ISA:", f.isa
 
   pdb.set_trace()
-
-def main():
-  parser = argparse.ArgumentParser(description="")
-  parser.add_argument("ARG", action="", help="")
-  parser.add_argument("-O", "--OPT", action="", help="")
-  result = parser.parse_args()
-
 
 if __name__ == "__main__":
   test()
