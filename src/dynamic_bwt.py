@@ -10,15 +10,25 @@ import argparse
 from bwt import BWT
 from copy import copy
 from exceptions import NotImplementedError
-import lil_matrix2 as lm2
+from lil_matrix2 import lil_matrix2 # efficient for multiple changes
+from csc_matrix2 import csc_matrix2 # efficient for multiple accesses
 
 class dBWT(BWT):
 
   def __init__(self, seq, isa=False):
+
+    if not seq.endswith("$"): seq += "$" # append terminator if necessary
+    # create partial sums key mapping
+    self.psum_keys = dict()
+    for idx, key in enumerate(sorted(list(set(seq)))):
+      self.psum_keys[key] = idx
+
     super(dBWT, self).__init__(seq)
 
-    self.tally = dict()
-    self.build_tallies()
+    self.psums = lil_matrix2((len(seq), len(self.psum_keys)))
+    self.build_psums()
+    #self.tally = dict()
+    #self.build_tallies()
 
     if isa:
       self.build_isa()
@@ -43,30 +53,37 @@ class dBWT(BWT):
     return self.isa
 
   def build_psums(self,):
-    pass
+    """
+    Build the partial sums sparse matrix given a new seq
+    @raise: ValueError if
+    """
 
-  def build_tallies(self, ):
-    max_tally_len = 0 # length of the longest tally array length
+    # Same as tally at this point
+    for row, c in enumerate(self.L):
+      self.psums[row, self.psum_keys[c]] = 1
 
-    # Create tally
-    for c in self.L:
-      if not self.tally.has_key(c): self.tally[c] = []
-
-      if len(self.tally[c]) == 0:
-        self.tally[c].extend([0]*max_tally_len)
-        self.tally[c].append(1)
-
-      else:
-        self.tally[c].extend( [self.tally[c][-1]] *\
-                          (max_tally_len - len(self.tally[c])) )
-
-        self.tally[c].append( self.tally[c][-1] + 1 )
-
-      max_tally_len = max(max_tally_len, len(self.tally[c]))
-
-    # Complete Tally arrays
-    for key in self.tally.keys():
-      self.tally[key].extend( [self.tally[key][-1]]* (max_tally_len-len(self.tally[key])) )
+  #def build_tallies(self, ):
+  #  max_tally_len = 0 # length of the longest tally array length
+  #
+  #  # Create tally
+  #  for c in self.L:
+  #    if not self.tally.has_key(c): self.tally[c] = []
+  #
+  #    if len(self.tally[c]) == 0:
+  #      self.tally[c].extend([0]*max_tally_len)
+  #      self.tally[c].append(1)
+  #
+  #    else:
+  #      self.tally[c].extend( [self.tally[c][-1]] *\
+  #                        (max_tally_len - len(self.tally[c])) )
+  #
+  #      self.tally[c].append( self.tally[c][-1] + 1 )
+  #
+  #    max_tally_len = max(max_tally_len, len(self.tally[c]))
+  #
+  #  # Complete Tally arrays
+  #  for key in self.tally.keys():
+  #    self.tally[key].extend( [self.tally[key][-1]]* (max_tally_len-len(self.tally[key])) )
 
   def insert_one(self, char, pos):
     """
@@ -127,18 +144,10 @@ def test():
   print "F:", f.F
   print "L:", f.L
   print "SA:", f.suff_arr
-  print "Tally:", f.tally
+  print "psum_keys", f.psum_keys
+  print "psums:", f.psums[:,:].todense()
   print "LCP:", f.lcp
   print "ISA:", f.isa, "\n\n"
-
-  f.insert_one("G", 2)
-
-  print "F:", f.F
-  print "L:", f.L
-  print "SA:", f.suff_arr
-  print "Tally:", f.tally
-  print "LCP:", f.lcp
-  print "ISA:", f.isa
 
   pdb.set_trace()
 
