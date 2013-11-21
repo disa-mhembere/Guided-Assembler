@@ -9,6 +9,8 @@ import pdb
 import argparse
 from bwt import BWT
 from copy import copy
+from exceptions import NotImplementedError
+import lil_matrix2 as lm2
 
 class dBWT(BWT):
 
@@ -23,6 +25,10 @@ class dBWT(BWT):
     else: self.isa = []
 
   def build_isa(self,):
+    """
+    Create the ISA (inverse suffix) data structure once knowledege of SA is
+    available
+    """
     assert len(self.suff_arr) != 0, "The suffix array must be build first"
 
     self.isa = [None]*len(self.suff_arr)
@@ -32,10 +38,12 @@ class dBWT(BWT):
 
   def get_isa(self, ):
     """
-    Create the ISA (inverse suffix) data structure once knowledege of SA is
-    available
+    TODO
     """
     return self.isa
+
+  def build_psums(self,):
+    pass
 
   def build_tallies(self, ):
     max_tally_len = 0 # length of the longest tally array length
@@ -77,37 +85,60 @@ class dBWT(BWT):
 
     lf_i = self.F.index(self.L[self.isa[pos]]) + self.tally[self.L[self.isa[pos]]][pos] - 1  # C_T_g + rank_g - 1 . Ferragina et al Opportunistic data structures .. (IIa)
 
-    if lf_i != len(self.L) - 1:
-      bottom_F = self.F[lf_i+1:]
-      bottom_L = self.L[lf_+1:]
+    if not (lf_i == len(self.L) - 1):
+      bottom_F = self.F[lf_i:]
+      bottom_L = self.L[lf_i:]
 
     self.L[i] = char # new char at i in L inserted (Ib)
     self.F[lf_i] = char # new char at LF(i) inserted in F
     self.L[lf_i] = curr_i # re-insert stored old char
 
-    if lf_i != len(self.L) - 1:
+    if not (lf_i == len(self.L) - 1):
       self.F[lf_i+1:] = bottom_F
       self.L[lf_i+1:] = bottom_L
+
+    #pdb.set_trace()
 
     # TODO: Recompute self.tally
     # Stage 4 -> Reorder
 
+    #
+
+    #cur_lf =  self.get_LF(char, pos)
+    #while (self.get_expected_LF(char) != cur_lf): # TODO: While expected LF != current LF
+    #
+    #
+    #  self.get_LF(char, i)
 
 
+  def get_expected_LF(self, char):
+    return self.L.count(char) + self.F.index(char)
+
+  def get_LF(self, char, pos):
+
+    raise NotImplementedError("Not implemented fool!")
 
   def reorder(self, i):
-    j = self.x # TODO
+    j = self.L[self.isa[i]] # TODO
 
 def test():
   f = dBWT("CTCTGC", True)
+
+  print "F:", f.F
+  print "L:", f.L
+  print "SA:", f.suff_arr
+  print "Tally:", f.tally
+  print "LCP:", f.lcp
+  print "ISA:", f.isa, "\n\n"
+
   f.insert_one("G", 2)
 
-  #print "F:", f.F
-  #print "L:", f.L
-  #print "SA:", f.suff_arr
-  #print "Tally:", f.tally
-  #print "LCP:", f.lcp
-  #print "ISA:", f.isa
+  print "F:", f.F
+  print "L:", f.L
+  print "SA:", f.suff_arr
+  print "Tally:", f.tally
+  print "LCP:", f.lcp
+  print "ISA:", f.isa
 
   pdb.set_trace()
 
