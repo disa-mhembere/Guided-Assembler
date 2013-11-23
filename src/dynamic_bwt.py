@@ -77,7 +77,6 @@ class dBWT(BWT):
 
     #lf_isa_i = self.F.index(self.L[i_in_L]) + np.sum(self.psums[:i_in_L+1, self.psum_keys[self.L[self.isa[pos]]]].todense()) - 1 # LF(ISA[i])
     lf_isa_i = self.LF(self.F, self.L, i_in_L)
-    pdb.set_trace()
 
     if not (lf_isa_i == len(self.L) - 1):
       bottom_F = self.F[lf_isa_i:]
@@ -96,20 +95,49 @@ class dBWT(BWT):
 
     # TODO: Alter psums, self.sa
     # Stage 4 -> Reorder
-    self.reorder(pos, Lp, Fp)
+    psa = self.build_row_psums(Fp, char)
+    jp = Fp.index(Lp[i]) + np.sum(psa[:i+1, 1].todense()) - 1 # ??
+
+    self.reorder(pos, Lp, Fp, jp)
 
     self.L = Lp
     self.F = Fp
     del Lp, Fp # Free
 
     self.build_psums() #  Update psums
-    self.updateSA()
+    self.updateSA() # TODO
+
+  def build_psums(self,):
+    """
+    Build the partial sums sparse matrix given a new seq
+    @raise: ValueError if
+    """
+    # Same as tally at this point
+    for row, c in enumerate(self.L):
+      self.psums[row, self.psum_keys[c]] = 1
+
+  def build_row_psums(self, Fp, char):
+    """
+    Build the partial sums sparse array for a given character
+
+    @raise: ValueError if
+    """
+    psum_arr = lil_matrix2((len(Fp),1))
+    for idx, c in Fp:
+      if c == char:
+        psum_arr[idx] = 1
+    return psum_arr
 
   def updateSA(self,):
     raise NotImplementedError("Updating SA unimplemented")
 
 
   def LF(self, F, L, i):
+    """
+    LF computes a mapping from a char in F to a char in L in the BWM
+
+    @param: TODO
+    """
     # LF[*] = C_T_* + rank_* - 1 . Ferragina et al Opportunistic data structures .. (IIa)
     return F.index(L[i]) + np.sum(self.psums[:i+1, \
                   self.psum_keys[L[i]]].todense()) - 1 # LF(ISA[i])
@@ -117,10 +145,11 @@ class dBWT(BWT):
   def get_expected_LF(self, char):
     return self.L.count(char) + self.F.index(char) # TODO: verify
 
-  def reorder(self, i, Lp, Fp):
+  def reorder(self, i, Lp, Fp, jp):
+    """
+    TODO: Doc
+    """
     j = self.suff_arr.index(i-1)
-    jp = self.LF(1) # stub
-
     while not j == jp:
       newj = self.LF(j, Lp, Fp)
       Fp, Lp = self.moverow(Fp, Lp, j, np)
