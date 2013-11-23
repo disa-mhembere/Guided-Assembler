@@ -110,7 +110,7 @@ def _get_lcp(s1, s2):
   return c
 
 def test():
-  b = BWT("ctctgc$")
+  b = BWT("CTGCTGC$")
 
   print "F:", b.F
   print "L:", b.L

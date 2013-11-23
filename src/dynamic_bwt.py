@@ -96,7 +96,7 @@ class dBWT(BWT):
     # TODO: Alter psums, self.sa
     # Stage 4 -> Reorder
     psa = self.build_row_psums(Fp, char)
-    jp = Fp.index(Lp[i]) + np.sum(psa[:i+1, 1].todense()) - 1 # ??
+    jp = Fp.index(Lp[i_in_L]) + np.sum(psa[:i_in_L+1, 0].todense()) - 1 # ??
 
     self.reorder(pos, Lp, Fp, jp)
 
@@ -104,8 +104,10 @@ class dBWT(BWT):
     self.F = Fp
     del Lp, Fp # Free
 
-    self.build_psums() #  Update psums
-    self.updateSA() # TODO
+    
+    # TO ADD
+    #self.build_psums() #  Update psums
+    #self.updateSA() # TODO
 
   def build_psums(self,):
     """
@@ -123,14 +125,13 @@ class dBWT(BWT):
     @raise: ValueError if
     """
     psum_arr = lil_matrix2((len(Fp),1))
-    for idx, c in Fp:
+    for idx, c in enumerate(Fp):
       if c == char:
-        psum_arr[idx] = 1
+        psum_arr[idx,0] = 1
     return psum_arr
 
   def updateSA(self,):
     raise NotImplementedError("Updating SA unimplemented")
-
 
   def LF(self, F, L, i):
     """
@@ -151,10 +152,10 @@ class dBWT(BWT):
     """
     j = self.suff_arr.index(i-1)
     while not j == jp:
-      newj = self.LF(j, Lp, Fp)
-      Fp, Lp = self.moverow(Fp, Lp, j, np)
+      newj = self.LF(Lp, Fp, j)
+      Fp, Lp = self.moverow(Fp, Lp, j, jp)
       j = newj
-      jp = self.LF(jp)
+      jp = self.LF(Lp, Fp, jp)
 
   def moverow(self, F, L, j, jp):
     """
@@ -164,7 +165,7 @@ class dBWT(BWT):
 
     # swap
     F[jp] = F[j]; L[jp] = L[j]
-    F[j] = F[Fjp]; F[j] = F[Fjp]
+    F[j] = F[jp]; F[j] = F[jp]
     return F, L
 
 def test():
