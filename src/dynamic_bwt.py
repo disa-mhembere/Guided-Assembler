@@ -12,6 +12,7 @@ from copy import copy
 from exceptions import NotImplementedError
 from lil_matrix2 import lil_matrix2 # efficient for multiple changes
 from csc_matrix2 import csc_matrix2 # efficient for multiple accesses
+import numpy as np
 
 class dBWT(BWT):
 
@@ -25,16 +26,14 @@ class dBWT(BWT):
 
     super(dBWT, self).__init__(seq)
 
-    self.psums = lil_matrix2((len(seq), len(self.psum_keys)))
+    self.psums = lil_matrix2((len(seq), len(self.psum_keys)), dtype=int)
     self.build_psums()
-    #self.tally = dict()
-    #self.build_tallies()
 
     if isa:
       self.build_isa()
     else: self.isa = []
 
-  def build_isa(self,):
+  def build_isa(self, ):
     """
     Create the ISA (inverse suffix) data structure once knowledege of SA is
     available
@@ -62,29 +61,6 @@ class dBWT(BWT):
     for row, c in enumerate(self.L):
       self.psums[row, self.psum_keys[c]] = 1
 
-  #def build_tallies(self, ):
-  #  max_tally_len = 0 # length of the longest tally array length
-  #
-  #  # Create tally
-  #  for c in self.L:
-  #    if not self.tally.has_key(c): self.tally[c] = []
-  #
-  #    if len(self.tally[c]) == 0:
-  #      self.tally[c].extend([0]*max_tally_len)
-  #      self.tally[c].append(1)
-  #
-  #    else:
-  #      self.tally[c].extend( [self.tally[c][-1]] *\
-  #                        (max_tally_len - len(self.tally[c])) )
-  #
-  #      self.tally[c].append( self.tally[c][-1] + 1 )
-  #
-  #    max_tally_len = max(max_tally_len, len(self.tally[c]))
-  #
-  #  # Complete Tally arrays
-  #  for key in self.tally.keys():
-  #    self.tally[key].extend( [self.tally[key][-1]]* (max_tally_len-len(self.tally[key])) )
-
   def insert_one(self, char, pos):
     """
     Insert a character at a certain position `pos` of the original sequence
@@ -95,48 +71,72 @@ class dBWT(BWT):
     assert isinstance(char, str), "Inserted item must be of char type"
     assert isinstance(pos, int), "Position on inserted item must be an int"
 
-    # TODO: Catch tally up after this!
-    i = self.suff_arr.index(pos) # index where we will insert into bwt
+    i_in_L = self.suff_arr.index(pos) # index where we will insert into bwt. Equivalent to self.isa[pos]
 
-    curr_i = self.L[i] # get old char at i
+    curr_i = self.L[i_in_L] # get old char at i
 
-    lf_i = self.F.index(self.L[self.isa[pos]]) + self.tally[self.L[self.isa[pos]]][pos] - 1  # C_T_g + rank_g - 1 . Ferragina et al Opportunistic data structures .. (IIa)
+    #lf_isa_i = self.F.index(self.L[i_in_L]) + np.sum(self.psums[:i_in_L+1, self.psum_keys[self.L[self.isa[pos]]]].todense()) - 1 # LF(ISA[i])
+    lf_isa_i = self.LF(self.F, self.L, i_in_L)
+    pdb.set_trace()
 
-    if not (lf_i == len(self.L) - 1):
-      bottom_F = self.F[lf_i:]
-      bottom_L = self.L[lf_i:]
+    if not (lf_isa_i == len(self.L) - 1):
+      bottom_F = self.F[lf_isa_i:]
+      bottom_L = self.L[lf_isa_i:]
 
-    self.L[i] = char # new char at i in L inserted (Ib)
-    self.F[lf_i] = char # new char at LF(i) inserted in F
-    self.L[lf_i] = curr_i # re-insert stored old char
+    Lp = copy(self.L) # L' (L prime = BWT')
+    Fp = copy(self.F) # F' (F prime)
 
-    if not (lf_i == len(self.L) - 1):
-      self.F[lf_i+1:] = bottom_F
-      self.L[lf_i+1:] = bottom_L
+    Lp[i_in_L] = char # new char at i in L inserted (Ib)
+    Fp[lf_isa_i] = char # new char at LF(i) inserted in F
+    Lp[lf_isa_i] = curr_i # re-insert stored old char
 
-    #pdb.set_trace()
+    if not (lf_isa_i == len(Lp) - 1):
+      Fp[lf_isa_i+1:] = bottom_F
+      Lp[lf_isa_i+1:] = bottom_L
 
-    # TODO: Recompute self.tally
+    # TODO: Alter psums, self.sa
     # Stage 4 -> Reorder
+    self.reorder(pos, Lp, Fp)
 
-    #
+    self.L = Lp
+    self.F = Fp
+    del Lp, Fp # Free
 
-    #cur_lf =  self.get_LF(char, pos)
-    #while (self.get_expected_LF(char) != cur_lf): # TODO: While expected LF != current LF
-    #
-    #
-    #  self.get_LF(char, i)
+    self.build_psums() #  Update psums
+    self.updateSA()
 
+  def updateSA(self,):
+    raise NotImplementedError("Updating SA unimplemented")
+
+
+  def LF(self, F, L, i):
+    # LF[*] = C_T_* + rank_* - 1 . Ferragina et al Opportunistic data structures .. (IIa)
+    return F.index(L[i]) + np.sum(self.psums[:i+1, \
+                  self.psum_keys[L[i]]].todense()) - 1 # LF(ISA[i])
 
   def get_expected_LF(self, char):
-    return self.L.count(char) + self.F.index(char)
+    return self.L.count(char) + self.F.index(char) # TODO: verify
 
-  def get_LF(self, char, pos):
+  def reorder(self, i, Lp, Fp):
+    j = self.suff_arr.index(i-1)
+    jp = self.LF(1) # stub
 
-    raise NotImplementedError("Not implemented fool!")
+    while not j == jp:
+      newj = self.LF(j, Lp, Fp)
+      Fp, Lp = self.moverow(Fp, Lp, j, np)
+      j = newj
+      jp = self.LF(jp)
 
-  def reorder(self, i):
-    j = self.L[self.isa[i]] # TODO
+  def moverow(self, F, L, j, jp):
+    """
+    TODO: Doc
+    """
+    Fjp = F[jp]; Ljp = L[jp]
+
+    # swap
+    F[jp] = F[j]; L[jp] = L[j]
+    F[j] = F[Fjp]; F[j] = F[Fjp]
+    return F, L
 
 def test():
   f = dBWT("CTCTGC", True)
@@ -149,8 +149,25 @@ def test():
   print "LCP:", f.lcp
   print "ISA:", f.isa, "\n\n"
 
+  f.insert_one("G", 2)
   pdb.set_trace()
 
 
 if __name__ == "__main__":
   test()
+
+
+import networkx as nx
+import numpy as np
+
+p = 0.3 # Alter as necessary
+n = 1000 # Alter as necessary
+fn = "graph%d"%n # Alter as necessary
+
+g = nx.erdos_renyi_graph(n, p,False)
+gsp = nx.to_scipy_sparse_matrix(g)
+
+np.save(fn, gsp) # Save to disk
+
+
+G = csc_matrix((100000,100000))

@@ -20,9 +20,22 @@ class BWT(object):
     self.L = []
     self.suff_arr = []
     self.lcp = []
+    self.rot = []
 
     self.new(seq)
     self.build_lcp(seq)
+
+  #def bwtViaRot(self, seq):
+  #  srotns = sorted(self.get_rotations(seq))
+  #
+  #  #self.suff_arr = map(lambda x: x[1], srotns)
+  #  self.bwt = map(lambda x: (x[0][0], x[1][1], x[1]), srotns)
+  #  pdb.set_trace()
+  #
+  #def get_rotations(self, t):
+  #
+  #  tt = t * 2
+  #  return [ (tt[i:i+len(t)], i) for i in xrange(0, len(t)) ]
 
   def suffixArray(self, s):
     satups = sorted([(s[i:], i) for i in xrange(0, len(s))])
@@ -32,7 +45,6 @@ class BWT(object):
   def bwtViaSa(self, seq):
       # Given T, returns BWT(T) by way of the suffix array
       assert len(self.suff_arr) != 0, "The suffix array must be build first"
-
       for si in self.suff_arr:
           if si == 0:
               self.L.append('$')
@@ -64,6 +76,7 @@ class BWT(object):
     """
     self.suffixArray(seq)
     self.bwtViaSa(seq)
+    #self.bwtViaRot(seq)
     self.F = sorted(self.L)
 
   def rankBwt(self, ):
@@ -97,7 +110,7 @@ def _get_lcp(s1, s2):
   return c
 
 def test():
-  b = BWT("atgcg")
+  b = BWT("ctctgc$")
 
   print "F:", b.F
   print "L:", b.L
