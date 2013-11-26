@@ -104,7 +104,7 @@ class dBWT(BWT):
     self.F = Fp
     del Lp, Fp # Free
 
-    
+
     # TO ADD
     #self.build_psums() #  Update psums
     #self.updateSA() # TODO
@@ -185,19 +185,3 @@ def test():
 
 if __name__ == "__main__":
   test()
-
-
-import networkx as nx
-import numpy as np
-
-p = 0.3 # Alter as necessary
-n = 1000 # Alter as necessary
-fn = "graph%d"%n # Alter as necessary
-
-g = nx.erdos_renyi_graph(n, p,False)
-gsp = nx.to_scipy_sparse_matrix(g)
-
-np.save(fn, gsp) # Save to disk
-
-
-G = csc_matrix((100000,100000))
