@@ -6,8 +6,8 @@ Data Structures:
 1. Get genome for 2 `simple` and `similar` organisms (ask about prokaryotic organisms) 
 2. Take one, split up into reads, add errors and use as synthetic data 
 3. Code:
-  - BWT & accompanying updater (Dynamic BWT) --> DM
-  - Suffix Array & updater (Dynamic SA) --> DM
+  - *BWT & accompanying updater (Dynamic BWT) --> DM*
+  - *Suffix Array & updater (Dynamic SA) --> DM*
   - Dynamic Tally Array - we don`t how to do yet --> DM (SL)
 4. Aligner:
   - Simple aligner (See lecture 12, slide 7ish) --> SL

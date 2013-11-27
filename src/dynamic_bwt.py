@@ -13,9 +13,9 @@ from exceptions import NotImplementedError
 from lil_matrix2 import lil_matrix2 # efficient for multiple changes
 from csc_matrix2 import csc_matrix2 # efficient for multiple accesses
 import numpy as np
+import sys
 
 class dBWT(BWT):
-
   def __init__(self, seq, isa=False):
 
     if not seq.endswith("$"): seq += "$" # append terminator if necessary
@@ -98,6 +98,9 @@ class dBWT(BWT):
     psa = self.build_row_psums(Fp, char)
     jp = Fp.index(Lp[i_in_L]) + np.sum(psa[:i_in_L+1, 0].todense()) - 1 # ??
 
+    print "\n Before reorder:"
+    print "Lp:", Lp
+    print "Fp:", Fp
     self.reorder(pos, Lp, Fp, jp)
 
     self.L = Lp
@@ -143,19 +146,28 @@ class dBWT(BWT):
     return F.index(L[i]) + np.sum(self.psums[:i+1, \
                   self.psum_keys[L[i]]].todense()) - 1 # LF(ISA[i])
 
-  def get_expected_LF(self, char):
-    return self.L.count(char) + self.F.index(char) # TODO: verify
-
   def reorder(self, i, Lp, Fp, jp):
     """
+    Move a row  from row j to row jp
+
+    @param i: the index
+    @type i: int
+    
+    @return: whatever
+    @raise:
     TODO: Doc
     """
     j = self.suff_arr.index(i-1)
+    print "1st j --> %d" % j
     while not j == jp:
       newj = self.LF(Lp, Fp, j)
       Fp, Lp = self.moverow(Fp, Lp, j, jp)
       j = newj
       jp = self.LF(Lp, Fp, jp)
+
+      print "j --> %d" %j
+      print "jp --> %d" %jp
+      print "Moving row:%d to %d" % (j, jp)
 
   def moverow(self, F, L, j, jp):
     """
@@ -168,15 +180,15 @@ class dBWT(BWT):
     F[j] = F[jp]; F[j] = F[jp]
     return F, L
 
-def test():
-  f = dBWT("CTCTGC", True)
+def test(s):
+  f = dBWT(s, True)
 
   print "F:", f.F
   print "L:", f.L
   print "SA:", f.suff_arr
-  print "psum_keys", f.psum_keys
-  print "psums:", f.psums[:,:].todense()
-  print "LCP:", f.lcp
+  #print "psum_keys", f.psum_keys
+  #print "psums:", f.psums[:,:].todense()
+  #print "LCP:", f.lcp
   print "ISA:", f.isa, "\n\n"
 
   f.insert_one("G", 2)
@@ -184,4 +196,4 @@ def test():
 
 
 if __name__ == "__main__":
-  test()
+  test(sys.argv[1])

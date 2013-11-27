@@ -7,7 +7,8 @@
 
 import argparse
 import pdb
-
+import sys
+  
 class BWT(object):
   def __init__(self, seq):
     """
@@ -109,8 +110,8 @@ def _get_lcp(s1, s2):
       break # break out when the two aren't equal
   return c
 
-def test():
-  b = BWT("CTGCTGC$")
+def test(s):
+  b = BWT(s)
 
   print "F:", b.F
   print "L:", b.L
@@ -125,4 +126,4 @@ def main():
 
 
 if __name__ == "__main__":
-  test()
+  test(sys.argv[1])
