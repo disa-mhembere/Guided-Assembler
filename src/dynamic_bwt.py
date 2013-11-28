@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 # dynamic_bwt.py
-# Created by Disa Mhembere on 2013-11-14.
-# Email: disa@jhu.edu
+# Created on 2013-11-14.
+# Email: disa@jhu.edu, slee320@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 
 import pdb
@@ -152,7 +152,7 @@ class dBWT(BWT):
 
     @param i: the index
     @type i: int
-    
+
     @return: whatever
     @raise:
     TODO: Doc

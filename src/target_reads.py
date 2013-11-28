@@ -2,7 +2,7 @@
 
 # target_reads.py
 # Created on 2013-11-26.
-# Email: disa@jhu.edu
+# Email: disa@jhu.edu, slee320@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 
 import numpy as np

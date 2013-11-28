@@ -1,14 +1,14 @@
 #!/usr/bin/python
 
 # bwt.py
-# Created by Disa Mhembere on 2013-11-18.
-# Email: disa@jhu.edu
+# Created on 2013-11-18.
+# Email: disa@jhu.edu, slee320@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 
 import argparse
 import pdb
 import sys
-  
+
 class BWT(object):
   def __init__(self, seq):
     """
