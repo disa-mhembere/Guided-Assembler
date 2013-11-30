@@ -16,6 +16,7 @@ class BWT(object):
 
     @seq: The seq in question
     """
+    seq = seq.upper()
     if not seq.endswith("$"): seq += "$" # append terminator if necessary
     self.F = []
     self.L = []

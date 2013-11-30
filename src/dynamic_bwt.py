@@ -19,6 +19,7 @@ from utils import Override
 class dBWT(BWT):
   def __init__(self, seq, isa=False):
 
+    seq = seq.upper()
     if not seq.endswith("$"): seq += "$" # append terminator if necessary
     # create partial sums key mapping
     self.psum_keys = dict()
@@ -185,7 +186,9 @@ class dBWT(BWT):
     """"
     Get the rank of a letter at a particular row in the BWT.
 
-    @todo: TODO: DM Use get_tot
+    @param row: what row of the bwt to look at
+    @param char: the character
+    @param get_tot: boolean whether or not to get the total
     """
 
     if row == 0:
@@ -200,7 +203,7 @@ class dBWT(BWT):
     return rank, tot
 
   @Override(BWT)
-  def rank_bwts(self, ):
+  def rank_bwt(self, ):
     """
     Given BWT string bw, return parallel list of B-ranks.
     Also returns tots: map from character to # times it appears.
@@ -216,36 +219,8 @@ class dBWT(BWT):
 
       ranks.append(rank)
 
-    print "\n\nrank, tots:", ranks, tots , "\n"
+    #print "\n\nrank, tots:", ranks, tots , "\n"
     return ranks, tots
-
-  #def first_col(self, tots):
-  #  """
-  #  Return map from character to the range of rows prefixed by
-  #  the character. Adapted from Prof. Ben Langmend's example code
-  #  """
-  #  first = {}
-  #  totc = 0
-  #  for c, count in sorted(tots.iteritems()):
-  #    first[c] = (totc, totc + count)
-  #    totc += count
-  #  return first
-
-  #def get_seq(self, ):
-  #  """
-  #  Make T from BWT(T)
-  #  Adapted from Prof. Ben Langmend's example code
-  #  """
-  #  ranks, tots = self.rankBwt()
-  #  first = self.firstCol(tots)
-  #  rowi = 0 # start in first row
-  #  t = '$' # start with rightmost character
-  #  while self.L[rowi] != '$':
-  #    c = self.L[rowi]
-  #    t = c + t # prepend to answer
-  #    # jump to row that starts with c of same rank
-  #    rowi = first[c][0] + ranks[rowi]
-  #  return t
 
 
 def test(s):

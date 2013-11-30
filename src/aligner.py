@@ -18,10 +18,12 @@ class Aligner():
     self.ref = reference(ref_str)
 
 
-  def align(self, seq):
+  def align(self, ):
 
-    raise NotImplementedError("Perform alignment ")
+    raise NotImplementedError("Perform alignment")
 
+  def alter_bwt(self,):
+    raise NotImplementedError("Alter BWT as necessary")
 
 def test():
   aligner = Aligner("ACTGTTGGAAAACCTTGTTGTACCCGGGTTAAACCCCC")

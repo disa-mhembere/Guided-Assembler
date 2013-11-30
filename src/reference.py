@@ -5,20 +5,21 @@
 # Email: disa@jhu.edu, slee320@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 import numpy as np
+import pdb # TODO: rm DM
 
 class Reference(object):
-  def __init__(self, len_R):
+  def __init__(self, R):
     """
     Object to hold a reference string and accompanying metadata associated with
     keeping track of how many matches/mismatches occur at each position
 
-    @param len_R: Is the length of the reference string. Note the actual
+    @param R: Is the reference string
     string is obtainable via the BWT so no need to hold it here.
     """
     self.look_up = {"A":0, "C":1, "G":2, "T":3}
-
+    self.R = R # reference string
     # keeps track of the letters that have landed at a particular index.
-    self.match_count = np.zeros((len_R, 4))# 4 is for 'ACGT' --STRICTLY in that order!
+    self.match_count = np.zeros((len(R), 4))# 4 is for 'ACGT' --STRICTLY in that order!
 
   def match(self, idx, char, cnt=1):
     """
@@ -90,9 +91,18 @@ class Reference(object):
 
     if show: plt.show()
 
-def test():
-  seq = "ACGTTTTACCCGGGTTAC"
-  ref = Reference(len(seq))
+  def get_consensus(self, thresh):
+    """
+    Get the fraction of positions in the reference that have come to consus on the
+    nt at that position.
+
+    @param thresh: the number that defines what nt count is sufficient to be confident
+    about the result at a single position
+    """
+    return (np.where(self.match_count.max(1) >= thresh)[0].shape[0])/float(self.match_count.shape[0])
+
+def test(show=True):
+  ref = Reference("ACGTTTTACCCGGGTTAC")
 
   # pretend read_length = 4, coverage = 5
   # should return: match CGTT @ idx = 1 and CCGG @ idx = 9
@@ -106,11 +116,14 @@ def test():
 
   print ref.get_contigs(thresh=3)
 
+  contigs = ref.get_consensus(thresh=3)
+
   print ref.match_count
-  ref.build_hist(coverage=5, show=True)
+  ref.build_hist(coverage=5, show=show)
 
-  ref.plot_maxes(show=True)
+  ref.plot_maxes(show=show)
 
+  return contigs
 
 if __name__ == "__main__":
   test()
