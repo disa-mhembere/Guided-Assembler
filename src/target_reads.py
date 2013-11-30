@@ -7,7 +7,8 @@
 
 import numpy as np
 import random
-import pdb
+from copy import copy
+import pdb # TODO: DM rm
 
 class Target(object):
   def __init__(self, p, read_length, T, seed=None, coverage=5):
@@ -28,11 +29,12 @@ class Target(object):
     self.T = T.upper() # All upper case
     self.p = p
     self.read_length = read_length
-    self.max_mutations = int(self.read_length*p) # important
+
+    self.max_mutations = round(self.read_length*p) # important
     self.coverage = coverage
 
     if seed: random.seed(seed) # for result reproducibility
-    self.seen = [0]*coverage # list of seen start indexes
+    self.seen = [0]*len(T) # list of seen start indexes
 
   def get_read(self, **kwargs):
     """
@@ -40,6 +42,7 @@ class Target(object):
 
     @keyword p: the probability of SNP occuring
     @keyword read_length: the read length
+    @keyword max_trials: the maximum number of times to rand redraw the idx if we keep finding over-covered idxs
     @return: a string with with a read obtained at a random position
     """
     if kwargs.has_key("p"): p = kwargs["p"]
@@ -48,17 +51,19 @@ class Target(object):
     if kwargs.has_key("read_length"): p = kwargs["read_length"]
     else: read_length = self.read_length
 
-    assert set(kwargs.keys()).issubset(set(["p", "read_length"]))\
+    assert set(kwargs.keys()).issubset(set(["p", "read_length", "max_trials"]))\
                                             ,"Unknown keyword argument in input"
 
     # pick idx in target string where to start from
-    idx = np.random.random_integers(0, high=len(self.T)-read_length) # The range is inclusive
-    while(self.seen[idx] > self.coverage): # don't over cover
+    idx = np.random.random_integers(0, high=len(self.T)-read_length)  # The range is inclusive
+    num_trials = 0 # Never let this loop go beyond 5 attempts to find a read
+    while(self.seen[idx] > self.coverage and num_trials < 5): # don't over-cover
       idx = np.random.random_integers(0, high=len(self.T)-read_length) # The range is inclusive
+      num_trials += 1
 
-    read = self.T[idx:read_length]
+    read = self.T[idx:idx+read_length]
 
-    read = self.mutate(read, p) # A SNPs at random indexes
+    read = self.mutate(read) # A SNPs at random indexes
 
     self._update_seen(idx)
     return read
@@ -70,18 +75,18 @@ class Target(object):
     @param: p the probability of SNP occurring # TODO SL verify
     @return: a bytearray with some possible SNPs added
     """
-
     # Get the number of mutations to apply
     num_mutations = random.randint(0, self.max_mutations)
     mut_idx = random.sample(range(len(read)), num_mutations) # indices to apply mutation
+
     read = bytearray(read)
 
-    incoming = read
+    incoming = copy(read) # TODO: Testing
 
     for idx in mut_idx:
       read[idx] = random.choice("ACGT")
 
-    if not read == incoming: print "Diff! %s != %s", (incoming, read)
+    if not read == incoming: print "Diff! %s != %s" % (incoming, read) # TODO: Testing
     return read
 
   def _update_seen(self, idx):
@@ -92,7 +97,8 @@ class Target(object):
     @param idx: The start index of the target string from where we just extracted a read
     """
     assert isinstance(idx, int), "Index must be an integer"
-    self.seen[idx] += 1
+
+    self.seen[idx:idx+self.read_length] = map(pp, self.seen[idx:idx+self.read_length])
 
   def get_read_list(self, **kwargs):
     """
@@ -115,12 +121,11 @@ class Target(object):
 
     assert set(kwargs.keys()).issubset(set(["p", "read_length", "save", "save_fn"]))\
                                             , "Unknown keyword argument in input"
-
     mutated_reads = list()
 
     for cov_idx in xrange(self.coverage+1):
       reads = [ self.T[l:l+read_length] for l in xrange(cov_idx, len(self.T)-read_length+1) ]
-      mutated_reads.extend(map(self.mutate, reads))
+      reads = mutated_reads.extend(map(self.mutate, reads))
 
     if kwargs.get("save", False):
       import datetime as dt
@@ -129,15 +134,24 @@ class Target(object):
       np.save(save_fn, mutated_reads)
     return mutated_reads
 
+def pp(var):
+  """
+  Used in mapping operation for lists to ++ an index in the list
+  @param var: some integer
+  """
+  return var + 1
+
 def test():
-
   seq = "acgttttacccgggttac"
-  T = Target(p=0.1, read_length=6, T=seq, seed=123, coverage=3)
+  T = Target(p=0.1, read_length=6, T=seq, seed=1234, coverage=3)
 
-  read_list = map(str,T.get_read_list())
-  print read_list
+  #read_list = map(str,T.get_read_list())
+  #print read_list
 
-  pdb.set_trace()
+  for i in xrange(10):
+    print T.get_read()
+
+  print T.seen
 
 def main():
   test()
