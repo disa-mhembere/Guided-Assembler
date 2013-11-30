@@ -14,6 +14,7 @@ from lil_matrix2 import lil_matrix2 # efficient for multiple changes
 from csc_matrix2 import csc_matrix2 # efficient for multiple accesses
 import numpy as np
 import sys
+from utils import Override
 
 class dBWT(BWT):
   def __init__(self, seq, isa=False):
@@ -180,6 +181,73 @@ class dBWT(BWT):
     F[j] = F[jp]; F[j] = F[jp]
     return F, L
 
+  def get_rank(self, row, char, get_tot=True):
+    """"
+    Get the rank of a letter at a particular row in the BWT.
+
+    @todo: TODO: DM Use get_tot
+    """
+
+    if row == 0:
+      rank = 0
+    else:
+      rank = self.psums[:row, self.psum_keys[char]].sum()
+
+    if get_tot:
+      tot = rank + self.psums[row:, self.psum_keys[char]].sum()
+    else:
+      return rank
+    return rank, tot
+
+  @Override(BWT)
+  def rank_bwts(self, ):
+    """
+    Given BWT string bw, return parallel list of B-ranks.
+    Also returns tots: map from character to # times it appears.
+    Adapted from Prof. Ben Langmend's example code
+    """
+    tots = dict()
+    ranks = []
+    for row, c in enumerate(self.L):
+      if c not in tots:
+        rank, tot = self.get_rank(row, c, True)
+        tots[c] = tot
+      else: rank = self.get_rank(row, c, False)
+
+      ranks.append(rank)
+
+    print "\n\nrank, tots:", ranks, tots , "\n"
+    return ranks, tots
+
+  #def first_col(self, tots):
+  #  """
+  #  Return map from character to the range of rows prefixed by
+  #  the character. Adapted from Prof. Ben Langmend's example code
+  #  """
+  #  first = {}
+  #  totc = 0
+  #  for c, count in sorted(tots.iteritems()):
+  #    first[c] = (totc, totc + count)
+  #    totc += count
+  #  return first
+
+  #def get_seq(self, ):
+  #  """
+  #  Make T from BWT(T)
+  #  Adapted from Prof. Ben Langmend's example code
+  #  """
+  #  ranks, tots = self.rankBwt()
+  #  first = self.firstCol(tots)
+  #  rowi = 0 # start in first row
+  #  t = '$' # start with rightmost character
+  #  while self.L[rowi] != '$':
+  #    c = self.L[rowi]
+  #    t = c + t # prepend to answer
+  #    # jump to row that starts with c of same rank
+  #    rowi = first[c][0] + ranks[rowi]
+  #  return t
+
+
 def test(s):
   f = dBWT(s, True)
 
@@ -191,7 +259,9 @@ def test(s):
   #print "LCP:", f.lcp
   print "ISA:", f.isa, "\n\n"
 
-  f.insert_one("G", 2)
+  #f.insert_one("G", 2)
+
+  print "Original string:", f.get_seq()
   pdb.set_trace()
 
 

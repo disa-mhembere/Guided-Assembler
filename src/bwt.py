@@ -12,7 +12,7 @@ import sys
 class BWT(object):
   def __init__(self, seq):
     """
-    A bwt class with a few auxilliary data structures i.e making it FM index
+    A bwt class with a few auxilliary data structures
 
     @seq: The seq in question
     """
@@ -26,64 +26,21 @@ class BWT(object):
     self.new(seq)
     self.build_lcp(seq)
 
-  #def bwtViaRot(self, seq):
-  #  srotns = sorted(self.get_rotations(seq))
-  #
-  #  #self.suff_arr = map(lambda x: x[1], srotns)
-  #  self.bwt = map(lambda x: (x[0][0], x[1][1], x[1]), srotns)
-  #  pdb.set_trace()
-  #
-  #def get_rotations(self, t):
-  #
-  #  tt = t * 2
-  #  return [ (tt[i:i+len(t)], i) for i in xrange(0, len(t)) ]
-
-  def suffixArray(self, s):
-    satups = sorted([(s[i:], i) for i in xrange(0, len(s))])
-    self.suff_arr = map(lambda x: x[1], satups)
-    return self.suff_arr
-
-  def bwtViaSa(self, seq):
-      # Given T, returns BWT(T) by way of the suffix array
-      assert len(self.suff_arr) != 0, "The suffix array must be build first"
-      for si in self.suff_arr:
-          if si == 0:
-              self.L.append('$')
-          else:
-              self.L.append(seq[si-1])
-
-      return self.L # return string-ized version of list bw
-
-  def get_lcp(self, ):
-    return self.lcp
-
-  def get_bwt(self, ):
-    return self.L
-
-  def build_lcp(self, seq):
-      """
-
-      @param seq: the sequence we will get lcp values for
-      """
-      for suff_idx in xrange(len(self.suff_arr)-1):
-        self.lcp.append( _get_lcp(seq[self.suff_arr[suff_idx]:], seq[self.suff_arr[suff_idx+1]:]) )
-
   def new(self, seq):
     """
     Create a new bwt, F, L and Tally arrays (All necessary attributes for FM index)
 
     @param seq: the insertion seq
-
     """
     self.suffixArray(seq)
     self.bwtViaSa(seq)
-    #self.bwtViaRot(seq)
     self.F = sorted(self.L)
 
-  def rankBwt(self, ):
+  def rank_bwt(self, ):
     """
     Given BWT string bw, return parallel list of B-ranks.
     Also returns tots: map from character to # times it appears.
+    Adapted from Prof. Ben Langmend's example code
     """
     tots = dict()
     ranks = []
@@ -91,7 +48,79 @@ class BWT(object):
       if c not in tots: tots[c] = 0
       ranks.append(tots[c])
       tots[c] += 1
+
+    print "\n\nrank, tots:", ranks, tots , "\n"
     return ranks, tots
+
+  def first_col(self, tots):
+    """
+    Return map from character to the range of rows prefixed by
+    the character. Adapted from Prof. Ben Langmend's example code
+    """
+    first = {}
+    totc = 0
+    for c, count in sorted(tots.iteritems()):
+      first[c] = (totc, totc + count)
+      totc += count
+    return first
+
+  def get_seq(self, ):
+    """
+    Make T from BWT(T)
+    Adapted from Prof. Ben Langmend's example code
+    """
+    ranks, tots = self.rank_bwt()
+    first = self.first_col(tots)
+    rowi = 0 # start in first row
+    t = '$' # start with rightmost character
+    while self.L[rowi] != '$':
+      c = self.L[rowi]
+      t = c + t # prepend to answer
+      # jump to row that starts with c of same rank
+      rowi = first[c][0] + ranks[rowi]
+    return t
+
+  def suffixArray(self, s):
+    """
+    Create a suffix array from a string s
+    Adapted from Prof. Ben Langmend's example code
+    """
+    satups = sorted([(s[i:], i) for i in xrange(0, len(s))])
+    self.suff_arr = map(lambda x: x[1], satups)
+    return self.suff_arr
+
+  def bwtViaSa(self, seq):
+    """
+    Given T, returns BWT(T) by way of the suffix array
+    Adapted from Prof. Ben Langmend's example code
+    """
+    assert len(self.suff_arr) != 0, "The suffix array must be build first"
+    for si in self.suff_arr:
+      if si == 0:
+        self.L.append('$')
+      else:
+        self.L.append(seq[si-1])
+
+    return self.L # return string-ized version of list bw
+
+  def get_lcp(self, ):
+    """
+    TODO: DM
+    """
+    return self.lcp
+
+  def get_bwt(self, ):
+    """
+    TODO: DM
+    """
+    return self.L
+
+  def build_lcp(self, seq):
+      """
+      @param seq: the sequence we will get lcp values for
+      """
+      for suff_idx in xrange(len(self.suff_arr)-1):
+        self.lcp.append( _get_lcp(seq[self.suff_arr[suff_idx]:], seq[self.suff_arr[suff_idx+1]:]) )
 
 # ============================ Stand Alone Fns =============================== #
 def _get_lcp(s1, s2):
@@ -117,6 +146,7 @@ def test(s):
   print "L:", b.L
   print "SA:", b.suff_arr
   print "LCP:", b.lcp
+  print "Original seq:", b.get_seq()
 
 def main():
   parser = argparse.ArgumentParser(description="")
