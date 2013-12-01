@@ -100,6 +100,18 @@ class Reference(object):
     """
     return (np.where(self.match_count.max(1) >= thresh)[0].shape[0])/float(self.match_count.shape[0])
 
+  def del_idx(self, idx):
+    """
+    Delete an index within the count array
+    @param idx: the index we want deleted
+    """
+    pass
+
+  def insert_idx(self, idx):
+    """
+    Insert an index.
+    """
+
 def test(show=True):
   ref = Reference("ACGTTTTACCCGGGTTAC")
 

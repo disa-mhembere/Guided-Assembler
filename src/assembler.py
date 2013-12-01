@@ -18,7 +18,6 @@ def assemble(reference, target, threshold, min_consensus):
   """
   Run the assembler on data
 
-
   @param reference:
   @param target:
   @param threshold:

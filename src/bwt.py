@@ -116,11 +116,11 @@ class BWT(object):
     return self.L
 
   def build_lcp(self, seq):
-      """
-      @param seq: the sequence we will get lcp values for
-      """
-      for suff_idx in xrange(len(self.suff_arr)-1):
-        self.lcp.append( _get_lcp(seq[self.suff_arr[suff_idx]:], seq[self.suff_arr[suff_idx+1]:]) )
+    """
+    @param seq: the sequence we will get lcp values for
+    """
+    for suff_idx in xrange(len(self.suff_arr)-1):
+      self.lcp.append( _get_lcp(seq[self.suff_arr[suff_idx]:], seq[self.suff_arr[suff_idx+1]:]) )
 
 # ============================ Stand Alone Fns =============================== #
 def _get_lcp(s1, s2):

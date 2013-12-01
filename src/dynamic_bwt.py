@@ -15,6 +15,7 @@ from csc_matrix2 import csc_matrix2 # efficient for multiple accesses
 import numpy as np
 import sys
 from utils import Override
+import bisect
 
 class dBWT(BWT):
   def __init__(self, seq, isa=False):
@@ -62,6 +63,22 @@ class dBWT(BWT):
     # Same as tally at this point
     for row, c in enumerate(self.L):
       self.psums[row, self.psum_keys[c]] = 1
+
+  def delete_one(self, pos):
+    """
+    Delete a char at some positin in the bwt
+
+    @param pos: the position that should be deleted
+    """
+    pass
+
+  def replace_one(self, pos):
+    """
+    Replace a char at some position in the bwt
+
+    @param pos: the positon that where the replacement is to occur
+    """
+    pass
 
   def insert_one(self, char, pos):
     """
@@ -147,6 +164,33 @@ class dBWT(BWT):
     # LF[*] = C_T_* + rank_* - 1 . Ferragina et al Opportunistic data structures .. (IIa)
     return F.index(L[i]) + np.sum(self.psums[:i+1, \
                   self.psum_keys[L[i]]].todense()) - 1 # LF(ISA[i])
+
+  def get_indexes(self, seq):
+    """
+    @param seq: the sequence we are looking for
+    @return: an array of all perfect matches
+    """
+    if not seq: return []
+
+    index_matches = [] # where we find matches
+    rev_char = seq[::-1] # reverse all characters in the sequence
+
+    f_matches = (self.F.index(rev_char[0]), bisect.bisect_right(self.F, rev_char[0])) # Range of indices
+    if len(seq) == 1:
+      for i in range(*f_matches):
+        index_matches.append(self.suffixArray[i])
+        return index_matches
+
+    l_matches = []
+    # backwards match
+    for i in xrange(rev_char[1:]):
+      for match in f_matches:
+        if self.L[match] == rev_char[i]:
+          l_matches
+
+
+
+
 
   def reorder(self, i, Lp, Fp, jp):
     """
