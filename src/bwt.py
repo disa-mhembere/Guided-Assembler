@@ -6,7 +6,6 @@
 # Copyright (c) 2013. All rights reserved.
 
 import argparse
-import pdb
 import sys
 
 class BWT(object):

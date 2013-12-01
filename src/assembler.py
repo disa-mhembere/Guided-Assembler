@@ -5,7 +5,6 @@
 # Email: disa@jhu.edu, slee320@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 
-import pdb
 import argparse
 import sys
 import os
@@ -36,13 +35,29 @@ def assemble(reference, target, threshold, min_consensus):
   return aligner
 
 def eval_acc(target_seq, contigs):
-  reconstructed_target = ""
+  if not contigs:
+    print "No contigs found!"
+    return
 
-  pdb.set_trace()
-  idxs, contig = zip(*contigs)
+  recon_target = ""
+  recon_target += " "*contigs[0][1]
 
+  last = 0
+  matches = 0
+  for contig in contigs:
+    contig_idx = contig[1]
+    recon_target += " "*(contig_idx-last)
+    recon_target += contig[0]
+    last = len(recon_target)
 
-  # TODO
+    # Eval accuracy
+    for i, c in enumerate(recon_target[contig_idx:]):
+      if c == target_seq[i+contig_idx]:
+        matches += 1
+
+  print "Reconstrution complete with %.3f%% accuracy ..." % ((matches/float(len(target_seq)))*100)
+  print "Target = %s" % target_seq
+  print "Reconstructed target = %s" % recon_target
 
 def main():
   parser = argparse.ArgumentParser(description="Run the assembler and determine where contigs lie using a dynamic bwt index")
@@ -57,7 +72,7 @@ def main():
   parser.add_argument("-s", "--split_target", action="store_true", help="Run with a target that must be split and have SNPs added")
   parser.add_argument("-c", "--coverage", action="store", type=int, default=10, help="The ideal average coverage. Default=10")
   parser.add_argument("-p", "--prob", action="store", type=float, default=0.05, help="prob of an SNP occuring in an target. Default=0.05")
-  parser.add_argument("-O", "--output", action="store", help="If we want output written to disk instead of stdout") # TODO DM
+  parser.add_argument("-O", "--output_filename", action="store", help="If we want output written to disk instead of stdout") # TODO DM
   parser.add_argument("-m", "--min_consensus", action="store", type=float, default=0.75, help="Minimum fraction of consensus for all\
                           positions when assembly is performed. Default=0.75")
 
@@ -71,9 +86,7 @@ def main():
 
   if result.test:
     target, contigs = rf.test(False)
-    eval_acc(target, contigs)
-
-    print "Mini-test todo" # TODO: DM IMPLEMENT-ME
+    eval_acc(target.R, contigs)
     sys.exit(0) # should terminate after test
 
   assert os.path.exists(result.ref), "File %s does not exits! Check the name and try again" % result.ref

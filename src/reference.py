@@ -5,7 +5,6 @@
 # Email: disa@jhu.edu, slee320@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 import numpy as np
-import pdb # TODO: rm DM
 
 class Reference(object):
   def __init__(self, R):
@@ -114,16 +113,16 @@ def test(show=True):
   ref.match(1, "A", 1); ref.match(2, "T", 2); ref.match(3, "G", 1); ref.match(4, "A", 2)
   ref.match(9, "T", 2);  ref.match(10, "A", 1); ref.match(11, "A", 3); ref.match(12, "G", 5);
 
-  print ref.get_contigs(thresh=3)
+  contigs = ref.get_contigs(thresh=3)
 
-  contigs = ref.get_consensus(thresh=3)
+  "Current concensus = %.3f %%" % (ref.get_consensus(thresh=3)*100.0)
 
-  print ref.match_count
+  #print ref.match_count
   ref.build_hist(coverage=5, show=show)
 
   ref.plot_maxes(show=show)
 
-  return contigs
+  return ref, contigs
 
 if __name__ == "__main__":
   test()

@@ -8,7 +8,6 @@
 import numpy as np
 import random
 from copy import copy
-import pdb # TODO: DM rm
 
 class Target(object):
   def __init__(self, p, read_length, T, seed=None, coverage=5):
