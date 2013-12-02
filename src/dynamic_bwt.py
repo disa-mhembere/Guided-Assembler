@@ -207,14 +207,10 @@ class dBWT(BWT):
 
     # backwards match
     for i in xrange(len(rev_char[1:])):
-      print "i is ", i
-      print "f_matches =", f_matches
       l_matches = []
       for match in f_matches:
         if self.L[match] == rev_char[i+1]:
           l_matches.append(match) # keep good indexes
-
-      print "l_matches =", l_matches
 
       f_matches = [] # clear f_matches
       for match in l_matches:

@@ -13,6 +13,8 @@ import target_reads as tr
 import reference as rf
 import aligner as al
 from math import ceil
+import utils
+import random
 
 def assemble(reference, target, threshold, min_consensus):
   """
@@ -26,12 +28,23 @@ def assemble(reference, target, threshold, min_consensus):
   """
   aligner = al.Aligner(reference, target)
 
+
+  failCount = 0
+  failThresh = 200
   while(True):
-    aligner.align() # STUB
-    if aligner.ref.get_consensus() >= min_consensus: break
-    else: aligner.alterbwt() # STUB
+    if failCount > failThresh:
+      aligner.tol += 1
+      failCount = 0
+    indicators,transcript = aligner.align() # STUB
+    if indicators == -1:
+      failCount+=1
+      continue
+    if aligner.ref.get_consensus(threshold) >= min_consensus: break
+    else:
+      if True in indicators: aligner.alter_bwt(indicators,transcript) # STUB
 
   print "Sequence assembly complete!"
+  print aligner.ref.match_count
   return aligner
 
 def eval_acc(target_seq, contigs):
@@ -50,14 +63,45 @@ def eval_acc(target_seq, contigs):
     recon_target += contig[0]
     last = len(recon_target)
 
-    # Eval accuracy
-    for i, c in enumerate(recon_target[contig_idx:]):
-      if c == target_seq[i+contig_idx]:
-        matches += 1
+  recon_target = recon_target.strip()
 
-  print "Reconstrution complete with %.3f%% accuracy ..." % ((matches/float(len(target_seq)))*100)
+    # # Eval accuracy
+    # for i, c in enumerate(recon_target[contig_idx:]):
+    #   if c == target_seq[i+contig_idx]:
+    #     matches += 1
+
+  utils.edta(target_seq,recon_target)
+
+  #print "Reconstrution complete with %.3f%% accuracy ..." % ((matches/float(len(target_seq)))*100)
   print "Target = %s" % target_seq
-  print "Reconstructed target = %s" % recon_target
+  print "Rarget = %s" % recon_target
+
+def randStrings(n,corrupt):
+  """
+  Generate a random reference string and a related target string
+
+  @param n: length of toy strings 
+  @param corrupt: Percentage of corrupted nt
+  """
+
+  R = ''
+  for i in xrange(n):
+    R = R + random.choice("ACGT")
+
+  T = R
+
+  corr = ceil(n*corrupt)
+  ml = n/2 - int(corr*0.35)
+  # Corrupted tides appear first, last, and middle
+  indices = range(0,int(0.15*corr),1)+range(ml,ml+int(0.7*corr),1)+range(n-int(0.15*corr),n,1)
+  T = bytearray(R)
+
+  # Mutate into something else
+  for idx in indices:
+    T[idx] = random.choice("ACGT")
+
+  return R,str(T)
+
 
 def main():
   parser = argparse.ArgumentParser(description="Run the assembler and determine where contigs lie using a dynamic bwt index")
@@ -75,6 +119,8 @@ def main():
   parser.add_argument("-O", "--output_filename", action="store", help="If we want output written to disk instead of stdout") # TODO DM
   parser.add_argument("-m", "--min_consensus", action="store", type=float, default=0.75, help="Minimum fraction of consensus for all\
                           positions when assembly is performed. Default=0.75")
+  parser.add_argument("-n", "--test_length",action="store",type=int,help="How long the test strings should be")
+  parser.add_argument("-C", "--corruption", action="store",type=float,help="How much mutation in the test string")
 
   parser.add_argument("-e", "--eval_acc", action="store_true", help="Given the correct target result evaluate the accuracy of the assembly")
   parser.add_argument("-P", "--plot", action="store_true", help="Display ALL plots visually. *Note: Causes os.system('pause') until figure is closed")  # TODO DM
@@ -84,10 +130,32 @@ def main():
 
   result = parser.parse_args()
 
+
   if result.test:
-    target, contigs = rf.test(False)
-    eval_acc(target.R, contigs)
-    sys.exit(0) # should terminate after test
+    # target, contigs = rf.test(False)
+    # eval_acc(target.R, contigs)
+    # sys.exit(0) # should terminate after test
+
+    ref_seq,targ_seq = randStrings(result.test_length,result.corruption)
+    print "REF:",ref_seq
+    print "TAR:",targ_seq
+    if result.split_target:
+      targ = tr.Target(result.prob, result.read_length, targ_seq, result.coverage)
+    else:
+      assert False, "Target must be split at this point!"
+
+    aligner = assemble(rf.Reference(ref_seq).R, targ, ceil(result.threshold*result.coverage), result.min_consensus)
+
+    print "REF:",aligner.ref.R
+    print "TAR:",targ_seq
+
+    if result.eval_acc:
+      print "Test?"
+      eval_acc(targ_seq, aligner.ref.get_contigs(result.threshold))
+    exit()
+
+
+
 
   assert os.path.exists(result.ref), "File %s does not exits! Check the name and try again" % result.ref
   assert os.path.exists(result.targ), "File %s does not exits! Check the name and try again" % result.targ
@@ -95,15 +163,22 @@ def main():
   ref_seq = open(result.ref).readline().strip().upper()
   targ_seq = open(result.targ).readline().strip().upper()
 
+
+  print "REF:",ref_seq
+  print "TAR:",targ_seq
+
   if result.split_target:
-    targ = tr.Target(result.p, result.read_length, ref_seq, result.coverage)
+    targ = tr.Target(result.prob, result.read_length, targ_seq, result.coverage)
   else:
     assert False, "Target must be split at this point!"
 
-  aligner = assemble(rf.Reference(ref_seq), targ, ceil(result.threshold*result.coverage), result.min_consensus)
+  aligner = assemble(rf.Reference(ref_seq).R, targ, ceil(result.threshold*result.coverage), result.min_consensus)
+
+  print "REF:",aligner.ref.R
+  print "TAR:",targ_seq
 
   if result.eval_acc:
-    eval_acc(targ_seq, aligner.get_contigs)
+    eval_acc(targ_seq, aligner.ref.get_contigs(result.threshold))
 
 
 if __name__ == "__main__":

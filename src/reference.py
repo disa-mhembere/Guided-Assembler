@@ -15,13 +15,13 @@ class Reference(object):
     @param R: Is the reference string
     string is obtainable via the BWT so no need to hold it here.
     """
-    self.look_up = {"A":0, "C":1, "G":2, "T":3}
+    self.look_up = {"A":0,"C":1,"G":2,"T":3,"B":4,"D":5,"H":6,"U":7,"-":8}
     self.R = R # reference string
     self.dc = 9
     # keeps track of the letters that have landed at a particular index.
     self.match_count = np.zeros((len(R), self.dc))# 4 is for 'ACGTBDHU-' --STRICTLY in that order!
 
-  def match(self, idx, char, cnt=1):
+  def match(self, idx, char, cnt=1, thresh=7):
     """
     If there is a match in the reference at some position
 
@@ -29,7 +29,18 @@ class Reference(object):
     @param char: the char that matched
     @param cnt: the number of times we should record char matched. Default=1
     """
+    maxElement = self.match_count[idx,:].max()
     self.match_count[idx, self.look_up[char]] += cnt
+
+    # If you exceed the threshold AND the previous max element, indicate
+    # that a change to the reference should be made...
+    if self.match_count[idx,self.look_up[char]] > max(thresh,maxElement) \
+      and self.R[idx] != char:
+      return True
+    else:
+      return False
+
+
 
   def build_hist(self, coverage, show=False, save=False, save_fn="max_hist_plot"):
     """
@@ -67,7 +78,9 @@ class Reference(object):
       # could replace with: `mx_idxs = np.where(self.match_count[idx] == self.match_count[idx].max())` # and figure out a tie breaker # TODO: DM,SL
       mx_idx = self.match_count[idx].argmax() # **NOTE: CAUTION - using argmax means the lexic 1st will win in the case of a tie!
 
-      if self.match_count[idx, mx_idx] >= thresh:
+
+
+      if self.match_count[idx, mx_idx] >= thresh and mx_idx < 4:
         curr_contig += "ACGT"[mx_idx] # Note assumption of ACGT here again
       else:
         if curr_contig: # If its not empty
@@ -75,7 +88,7 @@ class Reference(object):
           curr_contig = ""
 
     # Add last contig if it exists
-    if curr_contig: contigs.append(curr_contig, curr_contig_st_idx)
+    if curr_contig: contigs.append((curr_contig, curr_contig_st_idx))
 
     return contigs
 
@@ -146,9 +159,9 @@ def test(show=True):
 
   "Current concensus = %.3f %%" % (ref.get_consensus(thresh=3)*100.0)
 
-  ref.build_hist(coverage=5, show=show)
+  #ref.build_hist(coverage=5, show=show)
 
-  ref.plot_maxes(show=show)
+  #ref.plot_maxes(show=show)
 
   return ref, contigs
 

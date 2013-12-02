@@ -29,7 +29,6 @@ class Target(object):
     self.p = p
     self.read_length = read_length
 
-    self.max_mutations = round(self.read_length*p) # important
     self.coverage = coverage
 
     if seed: random.seed(seed) # for result reproducibility
@@ -54,17 +53,17 @@ class Target(object):
                                             ,"Unknown keyword argument in input"
 
     # pick idx in target string where to start from
-    idx = np.random.random_integers(0, high=len(self.T)-read_length+1)  # The range is inclusive
+    idx = np.random.random_integers(0, high=len(self.T)-read_length)  # The range is inclusive
     num_trials = 0 # Never let this loop go beyond 5 attempts to find a read
     while(self.seen[idx] > self.coverage and num_trials < 5): # don't over-cover
-      idx = np.random.random_integers(0, high=len(self.T)-read_length+1) # The range is inclusive
+      idx = np.random.random_integers(0, high=len(self.T)-read_length) # The range is inclusive
       num_trials += 1
 
     read = self.T[idx:idx+read_length]
 
-    read = self.mutate(read) # A SNPs at random indexes
+    #read = self.mutate(read) # A SNPs at random indexes
 
-    self._update_seen(idx)
+    #self._update_seen(idx)
     return read
 
   def mutate(self, read):
@@ -90,8 +89,8 @@ class Target(object):
     for idx in mut_idx:
       read[idx] = random.choice(comps[chr(read[idx])])
 
-    if not read == incoming: print "Diff! %s != %s" % (incoming, read) # TODO: Testing
-    return read
+    #if not read == incoming: print "Diff! %s != %s" % (incoming, read) # TODO: Testing
+    return str(read)
 
   def _update_seen(self, idx):
     """

@@ -12,24 +12,29 @@ import random
 
 class Aligner():
 
-  def __init__(self, ref_str):
+  def __init__(self, ref_str, target):
     """
     Object used for alignment
     """
-    self.dbwt = dynamic_bwt.BWT(ref_str) # contains SA, LF, get_LF
+    self.dbwt = dynamic_bwt.dBWT(ref_str) # contains SA, LF, get_LF
     self.ref = reference.Reference(ref_str)
+    self.targ = target
+
+    self.tol = 0      # Set error tolerance here...
 
 
-  def align(self, read):
+  def align(self):
     """
     Find an approximate match of the read in the reference
 
     @param read: Is the read 
     """ 
     T = self.ref.R
+    read = self.targ.get_read()
 
-    K = 3
-    tol = 5
+    #print "READ!",read
+
+    K = 2
     parts,poffs = partition(read,K)
 
     minEditDist = 10**6
@@ -37,16 +42,18 @@ class Aligner():
     cutoff = []
     transcripts = []
 
-    hits = [3,8,11]
     poff = 0
     partlen = len(read)/K
     for part in parts:    # Go through partitions to find matches
+      hits = self.dbwt.match(str(part))
+      if not hits:
+        continue
       for hit in hits:    # Query each partition exactly
-        left = max(0,hit-poff-tol)
-        right = min(len(T),hit-poff+len(read)+tol)
+        left = max(0,hit-poff-self.tol)
+        right = min(len(T),hit-poff+len(read)+self.tol)
 
         #Find approximate match
-        M,cut,transcript,mindels = kEdit(read,T[left:right],tol)
+        M,cut,transcript,mindels = kEdit(read,T[left:right],self.tol)
 
         if M == -1:   # This happens if no match found below tolerance
           continue
@@ -62,7 +69,7 @@ class Aligner():
             cutoff = [cut + left]
             transcripts = [transcript]
           elif mindels == minIndels:
-            if cut+left not in cutoffs:   # Avoid already seen ones
+            if cut+left not in cutoff:   # Avoid already seen ones
               cutoff.append(cut+left)
               transcripts.append(transcript)
       poff += partlen
@@ -71,30 +78,61 @@ class Aligner():
       idx = random.choice(range(0,len(cutoff),1))
       cutoff = cutoff[idx]
       transcripts = transcripts[idx]
+    elif not cutoff:      # If NO choices, return flags to SKIP
+      return -1,False
     else:
       cutoff = cutoff[0]
       transcripts = transcripts[0]
 
-    print "READ:",read
-    print "REF:",T
-    print cutoff
-    print transcripts
+    if minEditDist == 0: self.targ._update_seen(cutoff)
+
+    # print "Cutoff:",cutoff
+    # print "Transcript:",transcripts
+    # print "Error:",minEditDist
 
 
     ### NOW UPDATE REFERENCE...
-    j = 0
+    indicators = [cutoff]
     for nt in transcripts:
-      self.ref.match(cutoff,read[j])
-      cutoff+=1
-      j+=1
+      indicators.append(self.ref.match(cutoff,nt))
+      if nt not in "BDHU":
+        cutoff += 1
 
-    print self.ref.match_count
+    #print self.ref.match_count
+    return indicators,transcripts
+
+
+  def alter_bwt(self, indicators,transcript):
+
+    changes = {"B":"A","D":"C","H":"G","U":"T"}
+
+    # REF string
+    T = self.ref.R
+
+    cutoff = indicators[0]
+    for i in xrange(len(transcript)):    # ind being True means UPDATE BWT
+      ind = indicators[i+1]
+      ch = transcript[i]
+      if ind:
+        if ch in "ACGT" and T[cutoff] != ch:
+          #print "CHANGING T at",cutoff,"from",T[cutoff],"to",ch,"with tol",self.tol
+          T = T[0:cutoff] + ch + T[cutoff+1:]
+          cutoff += 1
+        elif ch in "BDHU":
+          T = T[0:cutoff] + changes[ch] + T[cutoff:]
+          self.ref.insert_idx(cutoff)
+          cutoff += 1
+        else:
+          T = T[0:cutoff] + T[cutoff+1:]
+          self.ref.del_idx(cutoff)
+      else:
+        cutoff += 1
+      self.dbwt = dynamic_bwt.dBWT(T)
+
+    self.ref.R = T
 
 
 
-
-  def alter_bwt(self,):
-    raise NotImplementedError("Alter BWT as necessary")
 
 
 
