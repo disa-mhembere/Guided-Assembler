@@ -54,10 +54,10 @@ class Target(object):
                                             ,"Unknown keyword argument in input"
 
     # pick idx in target string where to start from
-    idx = np.random.random_integers(0, high=len(self.T)-read_length)  # The range is inclusive
+    idx = np.random.random_integers(0, high=len(self.T)-read_length+1)  # The range is inclusive
     num_trials = 0 # Never let this loop go beyond 5 attempts to find a read
     while(self.seen[idx] > self.coverage and num_trials < 5): # don't over-cover
-      idx = np.random.random_integers(0, high=len(self.T)-read_length) # The range is inclusive
+      idx = np.random.random_integers(0, high=len(self.T)-read_length+1) # The range is inclusive
       num_trials += 1
 
     read = self.T[idx:idx+read_length]
@@ -71,19 +71,24 @@ class Target(object):
     """
     Use p to determine how to add SNPs to the returned string
 
-    @param: p the probability of SNP occurring # TODO SL verify
+    @param: p the probability of SNP occurring
     @return: a bytearray with some possible SNPs added
     """
-    # Get the number of mutations to apply
-    num_mutations = random.randint(0, self.max_mutations)
-    mut_idx = random.sample(range(len(read)), num_mutations) # indices to apply mutation
+
+    # Get indices to mutate; each has probability p of mutating
+    mut_idx = []
+    for i in xrange(len(read)):
+      U = random.random()
+      if U < self.p:
+        mut_idx.append(i)
 
     read = bytearray(read)
-
     incoming = copy(read) # TODO: Testing
 
+    # Mutate into something else
+    comps = {"A":"CGT","C":"AGT","G":"ACT","T":"ACG"}
     for idx in mut_idx:
-      read[idx] = random.choice("ACGT")
+      read[idx] = random.choice(comps[chr(read[idx])])
 
     if not read == incoming: print "Diff! %s != %s" % (incoming, read) # TODO: Testing
     return read
@@ -142,12 +147,12 @@ def pp(var):
 
 def test():
   seq = "acgttttacccgggttac"
-  T = Target(p=0.1, read_length=6, T=seq, seed=1234, coverage=3)
+  T = Target(p=0.01, read_length=6, T=seq, seed=1234, coverage=3)
 
   #read_list = map(str,T.get_read_list())
   #print read_list
 
-  for i in xrange(10):
+  for i in xrange(100):
     print T.get_read()
 
   print T.seen
