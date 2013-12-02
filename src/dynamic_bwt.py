@@ -97,9 +97,9 @@ class dBWT(BWT):
     #lf_isa_i = self.F.index(self.L[i_in_L]) + np.sum(self.psums[:i_in_L+1, self.psum_keys[self.L[self.isa[pos]]]].todense()) - 1 # LF(ISA[i])
     lf_isa_i = self.LF(self.F, self.L, i_in_L, self.psums)
 
-    if not (lf_isa_i == len(self.L) - 1):
-      bottom_F = self.F[lf_isa_i:]
-      bottom_L = self.L[lf_isa_i:]
+    #if not (lf_isa_i == len(self.L)+1):
+    bottom_F = self.F[lf_isa_i:]
+    bottom_L = self.L[lf_isa_i:]
 
     Lp = copy(self.L) # L' (L prime = BWT')
     Fp = copy(self.F) # F' (F prime)
@@ -108,36 +108,35 @@ class dBWT(BWT):
     Fp[lf_isa_i] = char # new char at LF(i) inserted in F
     Lp[lf_isa_i] = curr_i # re-insert stored old char
 
-    if not (lf_isa_i == len(Lp) - 1):
-      Fp[lf_isa_i+1:] = bottom_F
-      Lp[lf_isa_i+1:] = bottom_L
+    #if not (lf_isa_i == len(Lp) - 1):
+    Fp[lf_isa_i+1:] = bottom_F
+    Lp[lf_isa_i+1:] = bottom_L
 
     # TODO: Alter psums, self.sa
     # Stage 4 -> Reorder
-    #pdb.set_trace()
 
-    psumsp = lil_matrix2((self.psums.shape[0]+1,self.psums.shape[1]+1))  # psums prime
-    psumsp[:-1,:] = self.psums
-    psumsp[-1, self.psum_keys[char]] = self.build_row_psums(Fp, char)
-
-    psa = self.build_row_psums(Fp, char)
-    jp = self.LF(Lp, Fp, i_in_L, psumsp)
-
-    #jp = Fp.index(Lp[i_in_L]) + np.sum(psa[:i_in_L+1, 0].todense()) - 1 # ??
+    psumsp = lil_matrix2((self.psums.shape[0]+1, self.psums.shape[1]), dtype=int)  # psums prime
+    psumsp[:i_in_L,:] = self.psums[:i_in_L,:]
+    psumsp[i_in_L,:] = [0]*psumsp.shape[1]; psumsp[i_in_L, self.psum_keys[char]] = 1
+    psumsp[i_in_L+1:,:] = self.psums[i_in_L:,:]
 
     print "\n Before reorder:"
     print "Lp:", Lp
     print "Fp:", Fp
+
+    jp = self.LF(Lp, Fp, i_in_L, psumsp) # TODO Check this
     self.reorder(pos, Lp, Fp, jp, psumsp)
 
     self.L = Lp
     self.F = Fp
-    del Lp, Fp # Free
 
+    pdb.set_trace()
+    del Lp, Fp # Free
 
     # TO ADD
     #self.build_psums() #  Update psums
     #self.updateSA() # TODO
+
 
   def build_psums(self,):
     """
@@ -148,32 +147,49 @@ class dBWT(BWT):
     for row, c in enumerate(self.L):
       self.psums[row, self.psum_keys[c]] = 1
 
-  def build_row_psums(self, Fp, char):
-    """
-    Build the partial sums sparse array for a given character
-
-    @raise: ValueError if
-    """
-    psum_arr = lil_matrix2((len(Fp),1))
-    for idx, c in enumerate(Fp):
-      if c == char:
-        psum_arr[idx,0] = 1
-    return psum_arr
-
   def updateSA(self,):
     raise NotImplementedError("Updating SA unimplemented")
 
-  #def LF(self, F, L, i):
-  #  """
-  #  LF computes a mapping from a char in F to a char in L in the BWM
-  #
-  #  @ NOTE the use of self.psums even with arbitrary Fs, Ls!!! FIXME
-  #
-  #  @param: TODO
-  #  """
-  #  # LF[*] = C_T_* + rank_* - 1 . Ferragina et al Opportunistic data structures .. (IIa)
-  #  return F.index(L[i]) + np.sum(self.psums[:i+1, \
-  #                self.psum_keys[L[i]]].todense()) - 1 # LF(ISA[i])
+  def reorder(self, i, Lp, Fp, jp, psumsp):
+    """
+    Move a row  from row j to row jp
+
+    @param i: the index
+    @type i: int
+
+    @return: whatever
+    @raise:
+    TODO: Doc
+    """
+    j = self.suff_arr.index(i-1)
+
+    print "1st j --> %d" % j
+    while not j == jp:
+      newj = self.LF(Lp, Fp, j, psumsp) # TODO: Verify
+      Fp, Lp = self.moverow(Fp, Lp, j, jp)
+
+      # recompute psumsp
+      tmp = psumsp[jp,:]
+      psumsp[jp,:] = psumsp[j,:]
+      psumsp[j,:] = tmp
+
+      j = newj
+      jp = self.LF(Lp, Fp, jp, psumsp)
+
+      print "j --> %d" %j
+      print "jp --> %d" %jp
+      print "Moving row:%d to %d" % (j, jp)
+
+  def moverow(self, F, L, j, jp):
+    """
+    TODO: Doc
+    """
+    Fjp = F[jp]; Ljp = L[jp]
+
+    # swap
+    F[jp] = F[j]; L[jp] = L[j]
+    F[j] = F[jp]; F[j] = F[jp]
+    return F, L
 
   def LF(self, F, L, i, psums):
     """
@@ -221,40 +237,6 @@ class dBWT(BWT):
       index_matches.append(self.suff_arr[i])
 
     return index_matches
-
-  def reorder(self, i, Lp, Fp, jp, psumsp):
-    """
-    Move a row  from row j to row jp
-
-    @param i: the index
-    @type i: int
-
-    @return: whatever
-    @raise:
-    TODO: Doc
-    """
-    j = self.suff_arr.index(i-1)
-    print "1st j --> %d" % j
-    while not j == jp:
-      newj = self.LF(Lp, Fp, j, psumsp) # TODO: Verify
-      Fp, Lp = self.moverow(Fp, Lp, j, jp)
-      j = newj
-      jp = self.LF(Lp, Fp, jp, psumsp)
-
-      print "j --> %d" %j
-      print "jp --> %d" %jp
-      print "Moving row:%d to %d" % (j, jp)
-
-  def moverow(self, F, L, j, jp):
-    """
-    TODO: Doc
-    """
-    Fjp = F[jp]; Ljp = L[jp]
-
-    # swap
-    F[jp] = F[j]; L[jp] = L[j]
-    F[j] = F[jp]; F[j] = F[jp]
-    return F, L
 
   def get_rank(self, row, char, get_tot=True):
     """"
@@ -307,7 +289,7 @@ def test(s):
   #print "psums:", f.psums[:,:].todense()
   #print "LCP:", f.lcp
   #print "ISA:", f.isa, "\n\n"
-  #f.insert_one("G", 2)
+  f.insert_one("G", 2)
   #print "Original string:", f.get_seq()
 
   #print "F:", f.F

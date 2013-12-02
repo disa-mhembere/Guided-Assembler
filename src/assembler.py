@@ -80,7 +80,7 @@ def randStrings(n,corrupt):
   """
   Generate a random reference string and a related target string
 
-  @param n: length of toy strings 
+  @param n: length of toy strings
   @param corrupt: Percentage of corrupted nt
   """
 
@@ -148,6 +148,9 @@ def main():
 
     print "REF:",aligner.ref.R
     print "TAR:",targ_seq
+
+    aligner.ref.build_hist(result.coverage, True)
+    aligner.ref.plot_maxes(True)
 
     if result.eval_acc:
       print "Test?"
