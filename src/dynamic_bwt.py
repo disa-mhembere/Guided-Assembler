@@ -95,7 +95,7 @@ class dBWT(BWT):
     curr_i = self.L[i_in_L] # get old char at i
 
     #lf_isa_i = self.F.index(self.L[i_in_L]) + np.sum(self.psums[:i_in_L+1, self.psum_keys[self.L[self.isa[pos]]]].todense()) - 1 # LF(ISA[i])
-    lf_isa_i = self.LF(self.F, self.L, i_in_L)
+    lf_isa_i = self.LF(self.F, self.L, i_in_L, self.psums)
 
     if not (lf_isa_i == len(self.L) - 1):
       bottom_F = self.F[lf_isa_i:]
@@ -114,13 +114,21 @@ class dBWT(BWT):
 
     # TODO: Alter psums, self.sa
     # Stage 4 -> Reorder
+    #pdb.set_trace()
+
+    psumsp = lil_matrix2((self.psums.shape[0]+1,self.psums.shape[1]+1))  # psums prime
+    psumsp[:-1,:] = self.psums
+    psumsp[-1, self.psum_keys[char]] = self.build_row_psums(Fp, char)
+
     psa = self.build_row_psums(Fp, char)
-    jp = Fp.index(Lp[i_in_L]) + np.sum(psa[:i_in_L+1, 0].todense()) - 1 # ??
+    jp = self.LF(Lp, Fp, i_in_L, psumsp)
+
+    #jp = Fp.index(Lp[i_in_L]) + np.sum(psa[:i_in_L+1, 0].todense()) - 1 # ??
 
     print "\n Before reorder:"
     print "Lp:", Lp
     print "Fp:", Fp
-    self.reorder(pos, Lp, Fp, jp)
+    self.reorder(pos, Lp, Fp, jp, psumsp)
 
     self.L = Lp
     self.F = Fp
@@ -155,17 +163,29 @@ class dBWT(BWT):
   def updateSA(self,):
     raise NotImplementedError("Updating SA unimplemented")
 
-  def LF(self, F, L, i):
+  #def LF(self, F, L, i):
+  #  """
+  #  LF computes a mapping from a char in F to a char in L in the BWM
+  #
+  #  @ NOTE the use of self.psums even with arbitrary Fs, Ls!!! FIXME
+  #
+  #  @param: TODO
+  #  """
+  #  # LF[*] = C_T_* + rank_* - 1 . Ferragina et al Opportunistic data structures .. (IIa)
+  #  return F.index(L[i]) + np.sum(self.psums[:i+1, \
+  #                self.psum_keys[L[i]]].todense()) - 1 # LF(ISA[i])
+
+  def LF(self, F, L, i, psums):
     """
     LF computes a mapping from a char in F to a char in L in the BWM
 
     @param: TODO
     """
     # LF[*] = C_T_* + rank_* - 1 . Ferragina et al Opportunistic data structures .. (IIa)
-    return F.index(L[i]) + np.sum(self.psums[:i+1, \
+    return F.index(L[i]) + np.sum(psums[:i+1, \
                   self.psum_keys[L[i]]].todense()) - 1 # LF(ISA[i])
 
-  def get_indexes(self, seq):
+  def match(self, seq):
     """
     @param seq: the sequence we are looking for
     @return: an array of all perfect matches
@@ -175,24 +195,38 @@ class dBWT(BWT):
     index_matches = [] # where we find matches
     rev_char = seq[::-1] # reverse all characters in the sequence
 
-    f_matches = (self.F.index(rev_char[0]), bisect.bisect_right(self.F, rev_char[0])) # Range of indices
+    try:
+      f_matches = range(self.F.index(rev_char[0]), bisect.bisect_right(self.F, rev_char[0])) # Range of indices
+    except:
+      return [] # If the last letter is not even in the LF mapping the exception will be raised
+
     if len(seq) == 1:
-      for i in range(*f_matches):
+      for i in xrange(f_matches):
         index_matches.append(self.suffixArray[i])
-        return index_matches
+      return index_matches
 
-    l_matches = []
     # backwards match
-    for i in xrange(rev_char[1:]):
+    for i in xrange(len(rev_char[1:])):
+      print "i is ", i
+      print "f_matches =", f_matches
+      l_matches = []
       for match in f_matches:
-        if self.L[match] == rev_char[i]:
-          l_matches
+        if self.L[match] == rev_char[i+1]:
+          l_matches.append(match) # keep good indexes
 
+      print "l_matches =", l_matches
 
+      f_matches = [] # clear f_matches
+      for match in l_matches:
+        #f_matches.append(self.LF(self.F, self.L, match))
+        f_matches.append(self.LF(self.F, self.L, match, self.psums))
 
+    for i in f_matches:
+      index_matches.append(self.suff_arr[i])
 
+    return index_matches
 
-  def reorder(self, i, Lp, Fp, jp):
+  def reorder(self, i, Lp, Fp, jp, psumsp):
     """
     Move a row  from row j to row jp
 
@@ -206,10 +240,10 @@ class dBWT(BWT):
     j = self.suff_arr.index(i-1)
     print "1st j --> %d" % j
     while not j == jp:
-      newj = self.LF(Lp, Fp, j)
+      newj = self.LF(Lp, Fp, j, psumsp) # TODO: Verify
       Fp, Lp = self.moverow(Fp, Lp, j, jp)
       j = newj
-      jp = self.LF(Lp, Fp, jp)
+      jp = self.LF(Lp, Fp, jp, psumsp)
 
       print "j --> %d" %j
       print "jp --> %d" %jp
@@ -272,16 +306,24 @@ def test(s):
 
   print "F:", f.F
   print "L:", f.L
-  print "SA:", f.suff_arr
+  #print "SA:", f.suff_arr
   #print "psum_keys", f.psum_keys
   #print "psums:", f.psums[:,:].todense()
   #print "LCP:", f.lcp
-  print "ISA:", f.isa, "\n\n"
-
+  #print "ISA:", f.isa, "\n\n"
   #f.insert_one("G", 2)
+  #print "Original string:", f.get_seq()
 
-  print "Original string:", f.get_seq()
-  pdb.set_trace()
+  #print "F:", f.F
+  #print "L:", f.L
+
+  # search for matches
+
+  #print "Positons of matches:", f.match("ABA")
+  print "Positons of matches:", f.match("ACT") # should return 3 6 12 given GGAACTACTGGTACT
+
+
+  #pdb.set_trace()
 
 
 if __name__ == "__main__":

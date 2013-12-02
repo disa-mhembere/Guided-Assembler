@@ -7,7 +7,7 @@
 import numpy as np
 
 class Reference(object):
-  def __init__(self, R):
+  def __init__(self, R, data_counts=9):
     """
     Object to hold a reference string and accompanying metadata associated with
     keeping track of how many matches/mismatches occur at each position
@@ -17,8 +17,9 @@ class Reference(object):
     """
     self.look_up = {"A":0, "C":1, "G":2, "T":3}
     self.R = R # reference string
+    self.dc = 9
     # keeps track of the letters that have landed at a particular index.
-    self.match_count = np.zeros((len(R), 4))# 4 is for 'ACGT' --STRICTLY in that order!
+    self.match_count = np.zeros((len(R), self.dc))# 4 is for 'ACGTBDHU-' --STRICTLY in that order!
 
   def match(self, idx, char, cnt=1):
     """
@@ -105,12 +106,22 @@ class Reference(object):
     Delete an index within the count array
     @param idx: the index we want deleted
     """
-    pass
+    assert idx >= 0 or idx < self.match_count.shape[0], "Out of bounds with index %d"%idx
+    self.match_count = np.delete(self.match_count, idx, axis=0)
 
   def insert_idx(self, idx):
     """
     Insert an index.
+    @param idx: the index where we want to insert the charactere
     """
+    assert idx>=0 or idx < self.match_count.shape[0],"Out of bounds with index %d"%idx
+
+    data = np.zeros((1, self.dc))
+
+    if not idx == self.match_count.shape[0]: # last position insert gets no data
+      self.match_count[idx, 4:8] = data[0,:4] # Give Prior BDHU to new ACGT
+
+    self.match_count = np.insert(self.match_count, obj=idx, values=data ,axis=0)
 
 def test(show=True):
   ref = Reference("ACGTTTTACCCGGGTTAC")
@@ -127,9 +138,14 @@ def test(show=True):
 
   contigs = ref.get_contigs(thresh=3)
 
+  print contigs
+  ref.del_idx(1)
+  ref.insert_idx(12)
+
+  print  ref.get_contigs(thresh=3)
+
   "Current concensus = %.3f %%" % (ref.get_consensus(thresh=3)*100.0)
 
-  #print ref.match_count
   ref.build_hist(coverage=5, show=show)
 
   ref.plot_maxes(show=show)
