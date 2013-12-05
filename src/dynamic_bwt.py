@@ -19,7 +19,13 @@ import bisect
 
 class dBWT(BWT):
   def __init__(self, seq, isa=False):
+    """
+    A dynamic Burrows Wheeler Transform class that supports on the fly changes to
+    the seq that defined the BWT
 
+    @param seq: str - the sequence you want to use to form the bwt
+    @param isa: boolean - build an inverse suffix array
+    """
     seq = seq.upper()
     if not seq.endswith("$"): seq += "$" # append terminator if necessary
     # create partial sums key mapping
@@ -50,14 +56,13 @@ class dBWT(BWT):
 
   def get_isa(self, ):
     """
-    TODO
+    Return the inverse suffix array
     """
     return self.isa
 
   def build_psums(self,):
     """
     Build the partial sums sparse matrix given a new seq
-    @raise: ValueError if
     """
 
     # Same as tally at this point
@@ -138,28 +143,21 @@ class dBWT(BWT):
     #self.updateSA() # TODO
 
 
-  def build_psums(self,):
-    """
-    Build the partial sums sparse matrix given a new seq
-    @raise: ValueError if
-    """
-    # Same as tally at this point
-    for row, c in enumerate(self.L):
-      self.psums[row, self.psum_keys[c]] = 1
-
   def updateSA(self,):
+    """
+    Update the suffix array to an alteration in the sequence defining the bwt
+    """
     raise NotImplementedError("Updating SA unimplemented")
 
   def reorder(self, i, Lp, Fp, jp, psumsp):
     """
     Move a row  from row j to row jp
 
-    @param i: the index
-    @type i: int
-
-    @return: whatever
-    @raise:
-    TODO: Doc
+    @param i: the index (row) in the bwt where the change occured
+    @param Lp: the L' (prime) new L after the change
+    @param Fp: the F' (prime) new F after the change
+    @param jp: the j' (prime) as defined in the algorithm TODO add source
+    @param psumsp: the partial sums' (prime)
     """
     j = self.suff_arr.index(i-1)
 
@@ -182,7 +180,14 @@ class dBWT(BWT):
 
   def moverow(self, F, L, j, jp):
     """
-    TODO: Doc
+    Take F and L and move row j to jp and vice-versa
+
+    @param F: a list that corresponds to the first column of the bwm
+    @param L: a list that corresponds to the last column of the bwm
+    @param j: a row index i.e in range len(F/L)
+    @param jp: a row index i.e in range len(F/L)
+
+    @return: the new F and L with rows j & p switched
     """
     Fjp = F[jp]; Ljp = L[jp]
 
@@ -195,7 +200,10 @@ class dBWT(BWT):
     """
     LF computes a mapping from a char in F to a char in L in the BWM
 
-    @param: TODO
+    @param F: a list that corresponds to the first column of the bwm
+    @param L: a list that corresponds to the last column of the bwm
+    @param i: a row of the bwt
+    @param psums: a partial sums matrix
     """
     # LF[*] = C_T_* + rank_* - 1 . Ferragina et al Opportunistic data structures .. (IIa)
     return F.index(L[i]) + np.sum(psums[:i+1, \
@@ -230,7 +238,6 @@ class dBWT(BWT):
 
       f_matches = [] # clear f_matches
       for match in l_matches:
-        #f_matches.append(self.LF(self.F, self.L, match))
         f_matches.append(self.LF(self.F, self.L, match, self.psums))
 
     for i in f_matches:
@@ -245,13 +252,13 @@ class dBWT(BWT):
     @param row: what row of the bwt to look at
     @param char: the character
     @param get_tot: boolean whether or not to get the total
-    """
 
+    @retun: a rank and totals list of 2-item tuples
+    """
     if row == 0:
       rank = 0
     else:
       rank = self.psums[:row, self.psum_keys[char]].sum()
-
     if get_tot:
       tot = rank + self.psums[row:, self.psum_keys[char]].sum()
     else:
@@ -277,7 +284,6 @@ class dBWT(BWT):
 
     #print "\n\nrank, tots:", ranks, tots , "\n"
     return ranks, tots
-
 
 def test(s):
   f = dBWT(s, True)

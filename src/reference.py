@@ -13,7 +13,7 @@ class Reference(object):
     keeping track of how many matches/mismatches occur at each position
 
     @param R: Is the reference string
-    string is obtainable via the BWT so no need to hold it here.
+    @param data_counts: the counts related to which letter landed at a particular index
     """
     self.look_up = {"A":0,"C":1,"G":2,"T":3,"B":4,"D":5,"H":6,"U":7,"-":8}
     self.R = R # reference string
@@ -28,6 +28,9 @@ class Reference(object):
     @param idx: the index in R where char matched
     @param char: the char that matched
     @param cnt: the number of times we should record char matched. Default=1
+    @param thresh: threshold to indicate a change in the refernce should be made
+
+    @return: True or False on (....something... TODO: SL)
     """
     maxElement = self.match_count[idx,:].max()
     self.match_count[idx, self.look_up[char]] += cnt
@@ -39,8 +42,6 @@ class Reference(object):
       return True
     else:
       return False
-
-
 
   def build_hist(self, coverage, show=False, save=False, save_fn="max_hist_plot"):
     """
@@ -58,6 +59,11 @@ class Reference(object):
     maxes = self.match_count.max(1) # get maxes along 1st dim
 
     h = plt.hist(maxes, bins=self.match_count.shape[0]) # figure out where the majority
+
+    plt.ylabel("Frequency")
+    plt.xlabel("Count per index")
+    plt.title("Frequency count histogram")
+
     if show: plt.show()
     if save: plt.savefig(save_fn, dpi=160, frameon=False)
 
@@ -68,6 +74,7 @@ class Reference(object):
     Use thresholding to determine what is a contig using the match_count
 
     @param thresh: anything under this value will not be included in the
+    @return: the contigs found in the string
     """
     contigs = list()
     curr_contig = ""
@@ -77,7 +84,6 @@ class Reference(object):
 
       # could replace with: `mx_idxs = np.where(self.match_count[idx] == self.match_count[idx].max())` # and figure out a tie breaker # TODO: DM,SL
       mx_idx = self.match_count[idx].argmax() # **NOTE: CAUTION - using argmax means the lexic 1st will win in the case of a tie!
-
 
 
       if self.match_count[idx, mx_idx] >= thresh and mx_idx < 4:
@@ -95,12 +101,17 @@ class Reference(object):
   def plot_maxes(self, show=False):
     """
     Plot maxes to try to visualize where contigs will lie
+
+    @param show: boolean on if you want to show the image on the screen
     """
     import matplotlib.pyplot as plt
     maxes = self.match_count.max(1) # get maxes along 1st dim
 
     plt.figure()
-    plt.plot(maxes) # visualize where contigs may lie
+    plt.ylabel("Max Frequency")
+    plt.title("Contig plot")
+    plt.xlabel("Reference index")
+    plt.plot(maxes, lw=3) # visualize where contigs may lie
 
     if show: plt.show()
 
@@ -111,6 +122,7 @@ class Reference(object):
 
     @param thresh: the number that defines what nt count is sufficient to be confident
     about the result at a single position
+    @return: number that gives the fraction of positions that have come to consensus
     """
     return (np.where(self.match_count.max(1) >= thresh)[0].shape[0])/float(self.match_count.shape[0])
 

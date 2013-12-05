@@ -144,10 +144,13 @@ def main():
     else:
       assert False, "Target must be split at this point!"
 
+    from time import time
+    start = time()
     aligner = assemble(rf.Reference(ref_seq).R, targ, ceil(result.threshold*result.coverage), result.min_consensus)
 
-    print "REF:",aligner.ref.R
-    print "TAR:",targ_seq
+    print "Total assembly time taken %.f sec" % (time()-start)
+    #print "REF:",aligner.ref.R
+    #print "TAR:",targ_seq
 
     aligner.ref.build_hist(result.coverage, True)
     aligner.ref.plot_maxes(True)
