@@ -18,13 +18,12 @@ from utils import Override
 import bisect
 
 class dBWT(BWT):
-  def __init__(self, seq, isa=False):
+  def __init__(self, seq):
     """
     A dynamic Burrows Wheeler Transform class that supports on the fly changes to
     the seq that defined the BWT
 
     @param seq: str - the sequence you want to use to form the bwt
-    @param isa: boolean - build an inverse suffix array
     """
     seq = seq.upper()
     if not seq.endswith("$"): seq += "$" # append terminator if necessary
@@ -37,28 +36,6 @@ class dBWT(BWT):
 
     self.psums = lil_matrix2((len(seq), len(self.psum_keys)), dtype=int)
     self.build_psums()
-
-    if isa:
-      self.build_isa()
-    else: self.isa = []
-
-  def build_isa(self, ):
-    """
-    Create the ISA (inverse suffix) data structure once knowledege of SA is
-    available
-    """
-    assert len(self.suff_arr) != 0, "The suffix array must be build first"
-
-    self.isa = [None]*len(self.suff_arr)
-
-    for i in xrange(len(self.suff_arr)):
-      self.isa[self.suff_arr[i]] = i
-
-  def get_isa(self, ):
-    """
-    Return the inverse suffix array
-    """
-    return self.isa
 
   def build_psums(self,):
     """
@@ -75,15 +52,16 @@ class dBWT(BWT):
 
     @param pos: the position that should be deleted
     """
-    pass
+    pass #TODO
 
-  def replace_one(self, pos):
+  def replace_one(self, char, pos):
     """
     Replace a char at some position in the bwt
 
     @param pos: the positon that where the replacement is to occur
     """
-    pass
+    self.delete_one(pos)
+    self.insert_one(char)
 
   def insert_one(self, char, pos):
     """
@@ -99,10 +77,8 @@ class dBWT(BWT):
 
     curr_i = self.L[i_in_L] # get old char at i
 
-    #lf_isa_i = self.F.index(self.L[i_in_L]) + np.sum(self.psums[:i_in_L+1, self.psum_keys[self.L[self.isa[pos]]]].todense()) - 1 # LF(ISA[i])
     lf_isa_i = self.LF(self.F, self.L, i_in_L, self.psums)
 
-    #if not (lf_isa_i == len(self.L)+1):
     bottom_F = self.F[lf_isa_i:]
     bottom_L = self.L[lf_isa_i:]
 
@@ -113,13 +89,11 @@ class dBWT(BWT):
     Fp[lf_isa_i] = char # new char at LF(i) inserted in F
     Lp[lf_isa_i] = curr_i # re-insert stored old char
 
-    #if not (lf_isa_i == len(Lp) - 1):
     Fp[lf_isa_i+1:] = bottom_F
     Lp[lf_isa_i+1:] = bottom_L
 
     # TODO: Alter psums, self.sa
     # Stage 4 -> Reorder
-
     psumsp = lil_matrix2((self.psums.shape[0]+1, self.psums.shape[1]), dtype=int)  # psums prime
     psumsp[:i_in_L,:] = self.psums[:i_in_L,:]
     psumsp[i_in_L,:] = [0]*psumsp.shape[1]; psumsp[i_in_L, self.psum_keys[char]] = 1
@@ -129,27 +103,42 @@ class dBWT(BWT):
     print "Lp:", Lp
     print "Fp:", Fp
 
-    jp = self.LF(Lp, Fp, i_in_L, psumsp) # TODO Check this
-    self.reorder(pos, Lp, Fp, jp, psumsp)
+    j = self.get_rank(i_in_L, char, psumsp, False) + Fp.index(char) # Compute the Expected LF value postion
+    if j >= lf_isa_i:
+      j += 1
+
+    jp = self.LF(Fp, Lp, lf_isa_i, psumsp)
+
+    self.reorder(pos, Lp, Fp, j, jp, psumsp)
 
     self.L = Lp
     self.F = Fp
+    self.psums = psumsp
 
-    pdb.set_trace()
-    del Lp, Fp # Free
+    del Lp, Fp, psumsp # Free
+    self.updateSA_naive()
 
-    # TO ADD
-    #self.build_psums() #  Update psums
-    #self.updateSA() # TODO
-
-
-  def updateSA(self,):
+  def updateSA_naive(self,):
     """
     Update the suffix array to an alteration in the sequence defining the bwt
     """
-    raise NotImplementedError("Updating SA unimplemented")
+    j = self.L.index("$")
+    i = 0
+    n = len(self.F)
+    newSA = [None]*n
+    while(True):
+      newSA[j] = i
+      j = self.LF(self.F, self.L, j, self.psums)
+      i = (i-1)%(n)
+      if i==0: break
 
-  def reorder(self, i, Lp, Fp, jp, psumsp):
+    self.suff_arr = newSA
+    return self.suff_arr
+
+  def updateSA_dynamic(self,):
+    raise NotImplementedError("Method not done ... yet ...")
+
+  def reorder(self, i, Lp, Fp, j, jp, psumsp):
     """
     Move a row  from row j to row jp
 
@@ -159,12 +148,12 @@ class dBWT(BWT):
     @param jp: the j' (prime) as defined in the algorithm TODO add source
     @param psumsp: the partial sums' (prime)
     """
-    j = self.suff_arr.index(i-1)
 
     print "1st j --> %d" % j
+    print "1st jp -> %d\n" % jp
     while not j == jp:
-      newj = self.LF(Lp, Fp, j, psumsp) # TODO: Verify
-      Fp, Lp = self.moverow(Fp, Lp, j, jp)
+      newj = self.LF(Fp, Lp, j, psumsp)
+      self.moverow(Fp, Lp, j, jp)
 
       # recompute psumsp
       tmp = psumsp[jp,:]
@@ -172,15 +161,16 @@ class dBWT(BWT):
       psumsp[j,:] = tmp
 
       j = newj
-      jp = self.LF(Lp, Fp, jp, psumsp)
+
+      jp = self.LF(Fp, Lp, jp, psumsp)
 
       print "j --> %d" %j
       print "jp --> %d" %jp
-      print "Moving row:%d to %d" % (j, jp)
+      print "Moving row:%d to %d\n" % (j, jp)
 
   def moverow(self, F, L, j, jp):
     """
-    Take F and L and move row j to jp and vice-versa
+    Take F and L and move row jp to j and moving others as necessary
 
     @param F: a list that corresponds to the first column of the bwm
     @param L: a list that corresponds to the last column of the bwm
@@ -189,11 +179,25 @@ class dBWT(BWT):
 
     @return: the new F and L with rows j & p switched
     """
-    Fjp = F[jp]; Ljp = L[jp]
+    if j == jp:
+      print "NOP" # TODO:rm
+      return
 
-    # swap
-    F[jp] = F[j]; L[jp] = L[j]
-    F[j] = F[jp]; F[j] = F[jp]
+    # gets rows in betwix j & jp
+    if j > jp:
+      F_btwn = F[jp:j]; L_btwn = L[jp:j]
+      F[jp] = F[j]; L[jp] = L[j]
+      F[jp+1:j+1] = F_btwn; L[jp+1:j+1] = L_btwn
+
+    else:
+      F_btwn = F[j+1:jp]; F_btwn.append(F[jp])
+      L_btwn = L[j+1:jp]; L_btwn.append(L[jp])
+
+      F[jp] = F[j]
+      L[jp] = L[j]
+      F[j:jp] = F_btwn
+      L[j:jp] = L_btwn
+
     return F, L
 
   def LF(self, F, L, i, psums):
@@ -206,8 +210,9 @@ class dBWT(BWT):
     @param psums: a partial sums matrix
     """
     # LF[*] = C_T_* + rank_* - 1 . Ferragina et al Opportunistic data structures .. (IIa)
-    return F.index(L[i]) + np.sum(psums[:i+1, \
-                  self.psum_keys[L[i]]].todense()) - 1 # LF(ISA[i])
+    C_T = F.index(L[i])
+    rank = np.sum(psums[:i+1, self.psum_keys[L[i]]].todense())
+    return C_T + rank - 1 # LF(ISA[i])
 
   def match(self, seq):
     """
@@ -245,7 +250,7 @@ class dBWT(BWT):
 
     return index_matches
 
-  def get_rank(self, row, char, get_tot=True):
+  def get_rank(self, row, char, psums, get_tot=True):
     """"
     Get the rank of a letter at a particular row in the BWT.
 
@@ -258,15 +263,15 @@ class dBWT(BWT):
     if row == 0:
       rank = 0
     else:
-      rank = self.psums[:row, self.psum_keys[char]].sum()
+      rank = psums[:row, self.psum_keys[char]].sum()
     if get_tot:
-      tot = rank + self.psums[row:, self.psum_keys[char]].sum()
+      tot = rank + psums[row:, self.psum_keys[char]].sum()
     else:
       return rank
     return rank, tot
 
   @Override(BWT)
-  def rank_bwt(self, ):
+  def rank_bwt(self, psums):
     """
     Given BWT string bw, return parallel list of B-ranks.
     Also returns tots: map from character to # times it appears.
@@ -276,20 +281,72 @@ class dBWT(BWT):
     ranks = []
     for row, c in enumerate(self.L):
       if c not in tots:
-        rank, tot = self.get_rank(row, c, True)
+        rank, tot = self.get_rank(row, c, psums, True)
         tots[c] = tot
-      else: rank = self.get_rank(row, c, False)
+      else: rank = self.get_rank(row, c, psums, False)
 
       ranks.append(rank)
 
     #print "\n\nrank, tots:", ranks, tots , "\n"
     return ranks, tots
 
+def test_move_row():
+  # TODO rm
+  f = dBWT("CGTAACGT")
+
+  print "Before ..."
+  print "F:", f.F
+  print "L:", f.L
+
+  # Test Moverow
+  print "Move row 1 to 4..."
+  f.moverow(f.F, f.L, 1, 4)
+
+  print "After 1 ..."
+  print "F:", f.F
+  print "L:", f.L
+  assert f.F == ["$", "A", "C", "C", "A", "G", "G", "T", "T"] \
+      and f.L == ["T", "A", "A", "$", "T", "C", "C", "G", "G"], "Equiv Failure!"
+
+  # Test move from begin to somewhere
+  print "Test move row 0 to 6..."
+
+  f.moverow(f.F, f.L, 0, 6)
+  print "F:", f.F
+  print "L:", f.L
+  assert f.F == ["A", "C", "C", "A", "G", "G", "$", "T", "T"] \
+      and f.L == ["A", "A", "$", "T", "C", "C", "T", "G", "G"], "Equiv Failure!"
+
+  # Test move somewhere to end
+  print "Move row 2 to 7"
+  f.moverow(f.F, f.L, 2, 8)
+  print "F:", f.F
+  print "L:", f.L
+
+  # Test move j > jp
+  print "Move row 5 to 1"
+  f.moverow(f.F, f.L, 5, 1)
+  print "F:", f.F
+  print "L:", f.L
+
+  assert f.F == ["A", "$", "C", "A", "G", "G", "T", "T", "C"] \
+      and f.L == ["A", "T", "A", "T", "C", "C", "G", "G", "$"], "Equiv Failure!"
+
+  # Test move somewhere to end
+  print "Move row 8 to 0"
+  f.moverow(f.F, f.L, 8, 0)
+  print "F:", f.F
+  print "L:", f.L
+
+  assert f.F == ["C", "A", "$", "C", "A", "G", "G", "T", "T"] \
+    and f.L == ["$", "A", "T", "A", "T", "C", "C", "G", "G"], "Equiv Failure!"
+
 def test(s):
   f = dBWT(s, True)
 
   print "F:", f.F
   print "L:", f.L
+
   #print "SA:", f.suff_arr
   #print "psum_keys", f.psum_keys
   #print "psums:", f.psums[:,:].todense()
@@ -298,16 +355,14 @@ def test(s):
   f.insert_one("G", 2)
   #print "Original string:", f.get_seq()
 
-  #print "F:", f.F
-  #print "L:", f.L
+  print "F:", f.F
+  print "L:", f.L
 
+  print "Suffix array", f.suff_arr
   # search for matches
 
   #print "Positons of matches:", f.match("ABA")
-  print "Positons of matches:", f.match("ACT") # should return 3 6 12 given GGAACTACTGGTACT
-
-
-  #pdb.set_trace()
+  #print "Positons of matches:", f.match("ACT") # should return 3 6 12 given GGAACTACTGGTACT
 
 
 if __name__ == "__main__":
