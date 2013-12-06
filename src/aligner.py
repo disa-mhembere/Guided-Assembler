@@ -25,9 +25,8 @@ class Aligner():
 
   def align(self):
     """
-    Find an approximate match of the read in the reference
-
-    @param read: Is the read 
+    Find an approximate match of the read in the reference.
+    Pulls reads from the target_reads class.
     """ 
     T = self.ref.R
     read = self.targ.get_read()
@@ -93,8 +92,12 @@ class Aligner():
 
     ### NOW UPDATE REFERENCE...
     indicators = [cutoff]
+    lenny = len(self.ref.R)
     for nt in transcripts:
-      indicators.append(self.ref.match(cutoff,nt))
+      if cutoff < lenny:
+        indicators.append(self.ref.match(cutoff,nt))
+      else:
+        indicators.append(False)
       if nt not in "BDHU":
         cutoff += 1
 
@@ -117,6 +120,7 @@ class Aligner():
         if ch in "ACGT" and T[cutoff] != ch:
           #print "CHANGING T at",cutoff,"from",T[cutoff],"to",ch,"with tol",self.tol
           T = T[0:cutoff] + ch + T[cutoff+1:]
+          #self.ref.zero_idx(cutoff)
           cutoff += 1
         elif ch in "BDHU":
           T = T[0:cutoff] + changes[ch] + T[cutoff:]
@@ -125,11 +129,14 @@ class Aligner():
         else:
           T = T[0:cutoff] + T[cutoff+1:]
           self.ref.del_idx(cutoff)
-      else:
-        cutoff += 1
-      self.dbwt = dynamic_bwt.dBWT(T)
 
-    self.ref.R = T
+        self.dbwt = dynamic_bwt.dBWT(T)
+        self.ref.R = T
+      elif ch not in "BDHU":
+        cutoff += 1
+
+
+
 
 
 

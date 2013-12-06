@@ -11,20 +11,17 @@ import sys
 def runtests(num_tests, scriptname, out_fn):
 
   csv = "Test #, Corruption, %% Error, Total Edit distance\n"
-  f = open(out_fn, "ab")
-  f.write(csv)
-  f.close()
+
+  # f = open(out_fn, "ab")
+  # f.write(csv)
+  # f.close()
 
   C = [0.6]
   for c in C:
     for i in xrange(num_tests):
-      print "Running "
-      call(["python", scriptname, "-s", "-p 0.01", "-r 10", "-e", "-c 20", "-m 0.9", "-t", "-n 60", "-C %d"%c, ">>", out_fn])
+      #print "Running test % i with c=%f"%(i,c)
+      call(["python", scriptname,"_","_", "-s", "-p 0.01", "-r 10", "-e", "-c 20", "-m 0.9", "-t", "-n 80", "-C %d"%c])
 
-
-  f = open(out_fn, "ab")
-  f.write(csv)
-  f.close()
 
 
 if __name__ == "__main__":

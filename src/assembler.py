@@ -43,14 +43,35 @@ def assemble(reference, target, threshold, min_consensus):
     else:
       if True in indicators: aligner.alter_bwt(indicators,transcript) # STUB
 
-  print "Sequence assembly complete!"
-  print aligner.ref.match_count
+  #print "Sequence assembly complete!"
+  #print aligner.ref.match_count
   return aligner
 
 def eval_acc(target_seq, contigs):
   if not contigs:
     print "No contigs found!"
     return
+
+  totalEdit = 0
+  totalLen = 0
+
+  idx = 0
+
+  for contig in contigs:
+    M,a,b,c = al.kEdit(contig[0],target_seq,10**6)
+    #print "Contig",contig,"aligns with edit distance",M
+    
+    if contig[1] >= idx:
+      totalLen += len(contig[0])
+      idx = contig[1] + len(contig[0])
+    else:
+      totalLen += max(0,len(contig[0])-(idx-contig[1]))
+      idx = max(idx,contig[1]+len(contig[0]))
+
+    totalEdit += M
+  del a,b,c
+
+  sys.stdout.write("%f,%d\n" % (float(totalLen)/len(target_seq),totalEdit))
 
   recon_target = ""
   recon_target += " "*contigs[0][1]
@@ -63,18 +84,19 @@ def eval_acc(target_seq, contigs):
     recon_target += contig[0]
     last = len(recon_target)
 
-  recon_target = recon_target.strip()
+  # recon_target = recon_target.strip()
 
     # # Eval accuracy
     # for i, c in enumerate(recon_target[contig_idx:]):
     #   if c == target_seq[i+contig_idx]:
     #     matches += 1
 
-  utils.edta(target_seq,recon_target)
+  #utils.edta(target_seq,recon_target)
+
 
   #print "Reconstrution complete with %.3f%% accuracy ..." % ((matches/float(len(target_seq)))*100)
-  print "Target = %s" % target_seq
-  print "Rarget = %s" % recon_target
+  #print "Target = %s" % target_seq
+  #print "Rarget = %s" % recon_target
 
 def randStrings(n,corrupt):
   """
@@ -93,7 +115,7 @@ def randStrings(n,corrupt):
   corr = ceil(n*corrupt)
   ml = n/2 - int(corr*0.35)
   # Corrupted tides appear first, last, and middle
-  indices = range(0,int(0.15*corr),1)+range(ml,ml+int(0.7*corr),1)+range(n-int(0.15*corr),n,1)
+  indices = range(0,int(ceil(0.15*corr)),1)+range(ml,ml+int(ceil(0.7*corr)),1)+range(n-int(0.15*corr),n,1)
   T = bytearray(R)
 
   # Mutate into something else
@@ -137,8 +159,8 @@ def main():
     # sys.exit(0) # should terminate after test
 
     ref_seq,targ_seq = randStrings(result.test_length,result.corruption)
-    print "REF:",ref_seq
-    print "TAR:",targ_seq
+    # print "REF:",ref_seq
+    # print "TAR:",targ_seq
     if result.split_target:
       targ = tr.Target(result.prob, result.read_length, targ_seq, result.coverage)
     else:
@@ -149,15 +171,13 @@ def main():
     aligner = assemble(rf.Reference(ref_seq).R, targ, ceil(result.threshold*result.coverage), result.min_consensus)
 
     print "Total assembly time taken %.f sec" % (time()-start)
-    #print "REF:",aligner.ref.R
-    #print "TAR:",targ_seq
 
-    aligner.ref.build_hist(result.coverage, True)
-    aligner.ref.plot_maxes(True)
+
+    #aligner.ref.build_hist(result.coverage, True)
+    #aligner.ref.plot_maxes(True)
 
     if result.eval_acc:
-      print "Test?"
-      eval_acc(targ_seq, aligner.ref.get_contigs(result.threshold))
+      eval_acc(targ_seq, aligner.ref.get_contigs(ceil(result.threshold*result.coverage)))
     exit()
 
 
