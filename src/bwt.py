@@ -13,7 +13,7 @@ class BWT(object):
     """
     A bwt class with a few auxilliary data structures
 
-    @seq: The seq in question
+    @param seq: The seq in question
     """
     seq = seq.upper()
     if not seq.endswith("$"): seq += "$" # append terminator if necessary
@@ -60,7 +60,7 @@ class BWT(object):
     @param tots: a list with the a mapping of each character to the number of times
     it appears in F
 
-    @return the character and total list
+    @return: the character and total list
     """
     first = {}
     totc = 0

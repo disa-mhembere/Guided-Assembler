@@ -28,8 +28,7 @@ class lil_matrix2(lil_matrix):
     Add a column to the sparse matrix sp_mat1
     Used when adding a new letter to the alphabet
 
-    @param sp_mat1: the sparse matrix to be appended to
-    @param sp_mat2: the sparse matrix being appended to the bottom of sp_mat1
+    @param sp_mat: the sparse matrix to be appended to the self object
     """
     self._shape = (self._shape[0], self.shape[1]+1)
     if sp_mat is not None:

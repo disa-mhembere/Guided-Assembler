@@ -108,8 +108,6 @@ class Target(object):
     Return a list of even-coverage randomly sampled strings with possible SNPs
     given T. For the non-streaming version of the read splitting.
 
-    Optional:
-    --------
     @keyword p: the probability of SNP occuring
     @keyword read_length: the read length
     @keyword save: boolean save or don't to disk
@@ -141,6 +139,7 @@ def pp(var):
   """
   Used in mapping operation for lists to ++ an index in the list
   @param var: some integer
+  @return: plus one to value of var
   """
   return var + 1
 

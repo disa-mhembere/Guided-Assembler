@@ -327,10 +327,11 @@ class dBWT(BWT):
     Get the rank of a letter at a particular row in the BWT.
 
     @param row: what row of the bwt to look at
-    @param char: the character
-    @param get_tot: boolean whether or not to get the total
+    @param char: the character whose rank we see
+    @param psums: the partial sums matrix corresponding to the state of the bwt we are concerned with
+    @param get_tot: boolean whether or not to get the total count for that character
 
-    @retun: a rank and totals list of 2-item tuples
+    @return: a rank and totals list of 2-item tuples
     """
     if row == 0:
       rank = 0
@@ -348,6 +349,8 @@ class dBWT(BWT):
     Given BWT string bw, return parallel list of B-ranks.
     Also returns tots: map from character to # times it appears.
     Adapted from Prof. Ben Langmend's example code
+
+    @param psums: the partial sums matrix corresponding to the state of the bwt we are concerned with
     """
     tots = dict()
     ranks = []
@@ -367,6 +370,7 @@ class dBWT(BWT):
     """
     Make T (The original sequence) from BWT(T) (The Burrows Wheeler Transform string)
 
+    @param psums: the partial sums matrix corresponding to the state of the bwt we are concerned with
     @return: the original sequence given the bwt
     """
     ranks, tots = self.rank_bwt(psums)
@@ -380,68 +384,12 @@ class dBWT(BWT):
       rowi = first[c][0] + ranks[rowi]
     return t
 
-def test_move_row():
-  # TODO rm
-  f = dBWT("CGTAACGT")
-
-  print "Before ..."
-  print "F:", f.F
-  print "L:", f.L
-
-  # Test Moverow
-  print "Move row 1 to 4..."
-  f.moverow(f.F, f.L, 1, 4)
-
-  print "After 1 ..."
-  print "F:", f.F
-  print "L:", f.L
-  assert f.F == ["$", "A", "C", "C", "A", "G", "G", "T", "T"] \
-      and f.L == ["T", "A", "A", "$", "T", "C", "C", "G", "G"], "Equiv Failure!"
-
-  # Test move from begin to somewhere
-  print "Test move row 0 to 6..."
-
-  f.moverow(f.F, f.L, 0, 6)
-  print "F:", f.F
-  print "L:", f.L
-  assert f.F == ["A", "C", "C", "A", "G", "G", "$", "T", "T"] \
-      and f.L == ["A", "A", "$", "T", "C", "C", "T", "G", "G"], "Equiv Failure!"
-
-  # Test move somewhere to end
-  print "Move row 2 to 7"
-  f.moverow(f.F, f.L, 2, 8)
-  print "F:", f.F
-  print "L:", f.L
-
-  # Test move j > jp
-  print "Move row 5 to 1"
-  f.moverow(f.F, f.L, 5, 1)
-  print "F:", f.F
-  print "L:", f.L
-
-  assert f.F == ["A", "$", "C", "A", "G", "G", "T", "T", "C"] \
-      and f.L == ["A", "T", "A", "T", "C", "C", "G", "G", "$"], "Equiv Failure!"
-
-  # Test move somewhere to end
-  print "Move row 8 to 0"
-  f.moverow(f.F, f.L, 8, 0)
-  print "F:", f.F
-  print "L:", f.L
-
-  assert f.F == ["C", "A", "$", "C", "A", "G", "G", "T", "T"] \
-    and f.L == ["$", "A", "T", "A", "T", "C", "C", "G", "G"], "Equiv Failure!"
-
 def test(s):
   f = dBWT(s)
 
   print "F:", f.F
   print "L:", f.L
 
-  #print "SA:", f.suff_arr
-  #print "psum_keys", f.psum_keys
-  #print "psums:", f.psums[:,:].todense()
-  #print "LCP:", f.lcp
-  #print "ISA:", f.isa, "\n\n"
   f.insert_one("G", 2)
   #print "Original string:", f.get_seq()
   print "F:", f.F
@@ -449,10 +397,6 @@ def test(s):
   print "P:", f.psums
 
   print "Suffix array", f.suff_arr
-  # search for matches
-
-  #print "Positons of matches:", f.match("ABA")
-  #print "Positons of matches:", f.match("ACT") # should return 3 6 12 given GGAACTACTGGTACT
 
 
   #f.delete_one(2)

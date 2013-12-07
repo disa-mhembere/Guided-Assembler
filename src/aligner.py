@@ -108,7 +108,7 @@ class Aligner():
     Alters the BWT dynamically based on the updates pending in the
     queue created in the align() method.
 
-    @param: boolean if true do no optimizations i.e use a static bwt & no dbwt
+    @param no_opt: boolean if true do no optimizations i.e use a static bwt & no dbwt
     """
     changes = {"B":"A","D":"C","H":"G","U":"T"}
 
@@ -179,8 +179,6 @@ def kEdit(p,t,k):
   @param p: query string
   @param t: reference string
   @param k: max number of edits
-  @param M: minimum edit distance
-  @param spots: offsets in t where edits hit
   """
 
   m = len(p)+1      # Number of rows in DP matrix
