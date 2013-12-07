@@ -62,7 +62,9 @@ class Reference(object):
 
     @return: the histogram array
     """
-    #import matplotlib.pyplot as plt
+    #import matplotlib
+    #matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
 
     maxes = self.match_count.max(1) # get maxes along 1st dim
 
@@ -106,12 +108,14 @@ class Reference(object):
 
     return contigs
 
-  def plot_maxes(self, show=False):
+  def plot_maxes(self, show=False, save=False, save_fn="contig_plot"):
     """
     Plot maxes to try to visualize where contigs will lie
 
     @param show: boolean on if you want to show the image on the screen
     """
+    #import matplotlib
+    #matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     maxes = self.match_count.max(1) # get maxes along 1st dim
 
@@ -122,6 +126,7 @@ class Reference(object):
     plt.plot(maxes, lw=3) # visualize where contigs may lie
 
     if show: plt.show()
+    if save: plt.savefig(save_fn, dpi=160, frameon=False)
 
   def get_consensus(self, thresh):
     """

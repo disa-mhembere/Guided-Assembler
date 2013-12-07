@@ -138,9 +138,7 @@ def main():
   parser.add_argument("-S", "--save_figs", action="store_true", help="Save figures to disk? Boolean")  # TODO DM
   parser.add_argument("-F", "--figure_name", action="store", help="Save figures to disk with this file name. If this is set the -S is unnessary")# TODO DM
 
-
   result = parser.parse_args()
-
 
   if result.test:
     # target, contigs = rf.test(False)
@@ -161,16 +159,12 @@ def main():
 
     print "Total assembly time taken %.f sec" % (time()-start)
 
-
-    #aligner.ref.build_hist(result.coverage, True)
-    #aligner.ref.plot_maxes(True)
+    aligner.ref.build_hist(result.coverage, save=True)
+    aligner.ref.plot_maxes(True)
 
     if result.eval_acc:
       eval_acc(targ_seq, aligner.ref.get_contigs(ceil(result.threshold*result.coverage)))
     exit()
-
-
-
 
   assert os.path.exists(result.ref), "File %s does not exits! Check the name and try again" % result.ref
   assert os.path.exists(result.targ), "File %s does not exits! Check the name and try again" % result.targ
@@ -194,7 +188,6 @@ def main():
 
   if result.eval_acc:
     eval_acc(targ_seq, aligner.ref.get_contigs(result.threshold))
-
 
 if __name__ == "__main__":
   main()
