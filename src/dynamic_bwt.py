@@ -128,8 +128,6 @@ class dBWT(BWT):
 
     self.psums[i_in_L,:] = [0]*self.psums.shape[1]; self.psums[i_in_L, self.psum_keys[char]] = 1
 
-
-
     Lp[i_in_L] = char # new char at i in L inserted (Ib)
 
     lf_isa_i = self.LF(Fp,Lp, i_in_L, self.psums)
@@ -137,24 +135,11 @@ class dBWT(BWT):
     bottom_F = Fp[lf_isa_i:]
     bottom_L = Lp[lf_isa_i:]
 
-    # Lp = copy(self.L) # L' (L prime = BWT')
-    # Fp = copy(self.F) # F' (F prime)
-
-    # Lp[i_in_L] = char # new char at i in L inserted (Ib)
-    #if lf_isa_i < len(Fp)-1:
     Fp[lf_isa_i] = char # new char at LF(i) inserted in F
     Lp[lf_isa_i] = curr_i # re-insert stored old char
     Fp[lf_isa_i+1:] = bottom_F
     Lp[lf_isa_i+1:] = bottom_L
-    # else:
-    #   print "YEA"
-    #   Fp = Fp + [char]
-    #   print Fp
-    #   Lp = Lp + [curr_i]
-    #   print Lp
 
-
-    # TODO: Alter psums, self.sa
     # Stage 4 -> Reorder
     psumsp = lil_matrix2((self.psums.shape[0]+1, self.psums.shape[1]), dtype=int)  # psums prime
     psumsp[:lf_isa_i,:] = self.psums[:lf_isa_i,:]
@@ -164,7 +149,6 @@ class dBWT(BWT):
     except:
       pass
 
-    #j = self.get_rank(i_in_L, char, psumsp, False) + Fp.index(char) # Compute the Expected LF value postion
     if pos > 0:
       j = self.suff_arr.index(pos-1)
     else:
@@ -172,7 +156,6 @@ class dBWT(BWT):
 
     if j >= lf_isa_i:
       j += 1
-
 
     jp = self.LF(Fp, Lp, lf_isa_i, psumsp)
 
@@ -218,8 +201,6 @@ class dBWT(BWT):
     @param psumsp: the partial sums' (prime)
     """
 
-    # print "1st j --> %d" % j
-    # print "1st jp -> %d\n" % jp
     while not j == jp:
       newj = self.LF(Fp, Lp, j, psumsp)
       Fp,Lp,psumsp = self.moverow(Fp, Lp, j, jp,psumsp)
@@ -227,10 +208,6 @@ class dBWT(BWT):
       j = newj
 
       jp = self.LF(Fp, Lp, jp, psumsp)
-
-      # print "j --> %d" %j
-      # print "jp --> %d" %jp
-      # print "Moving row:%d to %d\n" % (j, jp)
     return Lp,Fp,psumsp
 
   def moverow(self, F, L, j, jp, psums):
@@ -259,7 +236,6 @@ class dBWT(BWT):
       if len(F_btwn) > 1: p_btwn[:-1,:] = psums[j+1:jp,:]
       p_btwn[-1,:] = psums[jp,:]
 
-
       F[jp] = F[j]
       L[jp] = L[j]
       F[j:jp] = F_btwn
@@ -267,8 +243,6 @@ class dBWT(BWT):
 
       psums[jp,:] = psums[j,:]
       psums[j:jp,:] = p_btwn
-
-
 
     return F, L, psums
 
@@ -284,7 +258,7 @@ class dBWT(BWT):
     # LF[*] = C_T_* + rank_* - 1 . Ferragina et al Opportunistic data structures .. (IIa)
     C_T = F.index(L[i])
     rank = np.sum(psums[:i+1, self.psum_keys[L[i]]].todense())
-    return C_T + rank - 1 # LF(ISA[i])
+    return C_T + rank - 1
 
   def match(self, seq):
     """
@@ -362,7 +336,6 @@ class dBWT(BWT):
 
       ranks.append(rank)
 
-    #print "\n\nrank, tots:", ranks, tots , "\n"
     return ranks, tots
 
   @Override(BWT)
@@ -398,7 +371,6 @@ def test(s):
 
   print "Suffix array", f.suff_arr
 
-
   #f.delete_one(2)
   print "F:", f.F
   print "L:",f.L
@@ -408,6 +380,8 @@ def test(s):
   print "F:",f.F
   print "L:",f.L
 
-
 if __name__ == "__main__":
-  test(sys.argv[1])
+  if len(sys.argv) < 2:
+    print "Testing dBWT with default \"CTCTGC\" ... Pass cmd line arg to alter test"
+    test("CTCTGC")
+  else: test(sys.argv[1])
