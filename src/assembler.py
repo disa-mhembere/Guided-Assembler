@@ -18,13 +18,12 @@ import random
 
 def assemble(reference, target, threshold, min_consensus,no_opt):
   """
-  Run the assembler on data
+  Execute method that runs the Guided Assembler on a given reference and target string
 
-
-  @param reference:
-  @param target:
-  @param threshold:
-  @param min_consensus:
+  @param reference: an object of class Reference -- representing the reference string
+  @param target: an object of class Target -- representing the target string
+  @param threshold: the minimum value per index required for the addition of index to a contig
+  @param min_consensus: the minimum total fraction of indexes that have come to concesus
   """
   aligner = al.Aligner(reference, target)
 
@@ -45,6 +44,12 @@ def assemble(reference, target, threshold, min_consensus,no_opt):
   return aligner
 
 def eval_acc(target_seq, contigs):
+  """
+  Evaluate the accuracy of the assembly of target reads
+
+  @param target_seq: The target the sequence
+  @param contigs: The contiguous sequences that are found
+  """
   if not contigs:
     print "No contigs found!"
     return
@@ -56,8 +61,6 @@ def eval_acc(target_seq, contigs):
 
   for contig in contigs:
     M,a,b,c = al.kEdit(contig[0],target_seq,10**6)
-    print "Contig",contig,"aligns with edit distance",M
-    
     if contig[1] >= idx:
       totalLen += len(contig[0])
       idx = contig[1] + len(contig[0])

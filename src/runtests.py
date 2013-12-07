@@ -9,7 +9,13 @@ from subprocess import call
 import sys
 
 def runtests(num_tests, scriptname, out_fn):
+  """
+  Run  a series of tests to obtain benchmarks for guided assembler
 
+  @param num_tests: the number of tests to run
+  @param scriptname: the name of the script containing the __main__ that we want to run
+  @param out_fn: the name of the output file that we want to generate
+  """
   csv = "Test #, Corruption, %% Error, Total Edit distance\n"
 
   # f = open(out_fn, "ab")

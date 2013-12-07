@@ -70,8 +70,8 @@ class Target(object):
     """
     Use p to determine how to add SNPs to the returned string
 
-    @param: p the probability of SNP occurring
-    @return: a bytearray with some possible SNPs added
+    @param read: the read we want mutated
+    @return: a string with some SNPs added
     """
 
     # Get indices to mutate; each has probability p of mutating

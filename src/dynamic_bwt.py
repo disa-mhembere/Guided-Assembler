@@ -103,6 +103,7 @@ class dBWT(BWT):
     """
     Replace a char at some position in the bwt
 
+    @param char: the char that will replace the one at pos
     @param pos: the positon that where the replacement is to occur
     """
     self.delete_one(pos)
@@ -153,7 +154,7 @@ class dBWT(BWT):
     # Stage 4 -> Reorder
     psumsp = lil_matrix2((self.psums.shape[0]+1, self.psums.shape[1]), dtype=int)  # psums prime
     psumsp[:lf_isa_i,:] = self.psums[:lf_isa_i,:]
-    psumsp[lf_isa_i,:] = [0]*psumsp.shape[1]; psumsp[lf_isa_i, self.psum_keys[curr_i]] = 1   
+    psumsp[lf_isa_i,:] = [0]*psumsp.shape[1]; psumsp[lf_isa_i, self.psum_keys[curr_i]] = 1
     try:
       psumsp[lf_isa_i+1:,:] = self.psums[lf_isa_i:,:]
     except:
@@ -207,7 +208,8 @@ class dBWT(BWT):
     @param i: the index (row) in the bwt where the change occured
     @param Lp: the L' (prime) new L after the change
     @param Fp: the F' (prime) new F after the change
-    @param jp: the j' (prime) as defined in the algorithm TODO add source
+    @param j: the j actual position of j
+    @param jp: the j' (prime) expected position of j
     @param psumsp: the partial sums' (prime)
     """
 
@@ -237,10 +239,6 @@ class dBWT(BWT):
 
     @return: the new F and L with rows j & p switched
     """
-    if j == jp:
-      #print "NOP" # TODO:rm
-      return
-
     # gets rows in betwix j & jp
     if j > jp:
       F_btwn = F[jp:j]; L_btwn = L[jp:j]; p_btwn = psums[jp:j,:]
@@ -357,6 +355,24 @@ class dBWT(BWT):
     #print "\n\nrank, tots:", ranks, tots , "\n"
     return ranks, tots
 
+  @Override(BWT)
+  def get_seq(self, psums):
+    """
+    Make T (The original sequence) from BWT(T) (The Burrows Wheeler Transform string)
+
+    @return: the original sequence given the bwt
+    """
+    ranks, tots = self.rank_bwt(psums)
+    first = self.first_col(tots)
+    rowi = 0 # start in first row
+    t = '$' # start with rightmost character
+    while self.L[rowi] != '$':
+      c = self.L[rowi]
+      t = c + t # prepend to answer
+      # jump to row that starts with c of same rank
+      rowi = first[c][0] + ranks[rowi]
+    return t
+
 def test_move_row():
   # TODO rm
   f = dBWT("CGTAACGT")
@@ -409,7 +425,6 @@ def test_move_row():
     and f.L == ["$", "A", "T", "A", "T", "C", "C", "G", "G"], "Equiv Failure!"
 
 def test(s):
-  print s
   f = dBWT(s)
 
   print "F:", f.F
@@ -422,7 +437,6 @@ def test(s):
   #print "ISA:", f.isa, "\n\n"
   f.insert_one("G", 0)
   #print "Original string:", f.get_seq()
-
   print "F:", f.F
   print "L:", f.L
   print "P:", f.psums

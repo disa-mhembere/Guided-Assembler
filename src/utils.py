@@ -16,68 +16,73 @@ def Override(interface_class):
   return overrider
 
 def edta(X,Y):
-	m = len(X)+1
-	n = len(Y)+1
+  """
+  Compute the Edit distance between two sequences
 
-	D = [[[0,'']]*n for i in range(m)]
+  @param X: any arbritrary string
+  @param Y: any arbritrary string
+  """
+  m = len(X)+1
+  n = len(Y)+1
 
-	#Initialize top row/column
-	for i in range(m)[1:]:
-	    D[i][0]=[i,'I']
-	for j in range(n)[1:]:
-	    D[0][j]=[j,'D']
+  D = [[[0,'']]*n for i in range(m)]
+
+  #Initialize top row/column
+  for i in range(m)[1:]:
+    D[i][0]=[i,'I']
+  for j in range(n)[1:]:
+    D[0][j]=[j,'D']
 
 
-	for i in range(m)[1:]:
-	    for j in range(n)[1:]:
+  for i in range(m)[1:]:
+    for j in range(n)[1:]:
 
-	        #Match character??
-	        s = 1
-	        if X[i-1] == Y[j-1]:
-	            s = 0
+      #Match character??
+      s = 1
+      if X[i-1] == Y[j-1]:
+        s = 0
 
-	        d = min([D[i-1][j][0]+1,D[i][j-1][0]+1,D[i-1][j-1][0]+s])
+      d = min([D[i-1][j][0]+1,D[i][j-1][0]+1,D[i-1][j-1][0]+s])
 
-	        if d == D[i-1][j][0]+1:
-	            ch = 'I'
-	        if d == D[i][j-1][0]+1:
-	            ch = 'D'
-	        if d == D[i-1][j-1][0]+s:
-	            if s == 0:
-	                ch = 'M'
-	            else:
-	                ch = 'R'
+      if d == D[i-1][j][0]+1:
+        ch = 'I'
+      if d == D[i][j-1][0]+1:
+        ch = 'D'
+      if d == D[i-1][j-1][0]+s:
+        if s == 0:
+          ch = 'M'
+        else:
+          ch = 'R'
 
-	        D[i][j] = [d,ch]
+      D[i][j] = [d,ch]
 
-	print D[m-1][n-1][0]
+  print D[m-1][n-1][0]
 
-	row = m-1
-	col = n-1
+  row = m-1
+  col = n-1
 
-	eX = ''
-	eY = ''
+  eX = ''
+  eY = ''
 
-	while row > 0 or col > 0:
-	    c = D[row][col][1]
+  while row > 0 or col > 0:
+    c = D[row][col][1]
 
-	    if c == 'I':
-	        eX = X[row-1] + eX
-	        eY = '-' + eY
-	        row = row - 1
-	    elif c == 'D':
-	        eX = '-' + eX
-	        eY = Y[col-1] + eY
-	        col = col - 1
-	    else:
-	        eX = X[row-1] + eX
-	        eY = Y[col-1] + eY
-	        row = row - 1
-	        col = col - 1
+    if c == 'I':
+      eX = X[row-1] + eX
+      eY = '-' + eY
+      row = row - 1
+    elif c == 'D':
+      eX = '-' + eX
+      eY = Y[col-1] + eY
+      col = col - 1
+    else:
+      eX = X[row-1] + eX
+      eY = Y[col-1] + eY
+      row = row - 1
+      col = col - 1
 
-	print eX
-	print eY
+  print eX
+  print eY
 
 if __name__ == "__main__":
   print "No main implementation for", __file__
-

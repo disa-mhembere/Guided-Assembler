@@ -15,7 +15,11 @@ class Aligner():
 
   def __init__(self, ref_str, target):
     """
-    Object used for alignment
+    Object used for alignment of a target object that can generate multiple reads
+    related to target string. i.e. reads to be aligned
+
+    @param ref_str: the reference string
+    @param target: the target string
     """
     self.dbwt = dynamic_bwt.dBWT(ref_str) # contains SA, LF, get_LF
     self.ref = reference.Reference(ref_str)
@@ -30,7 +34,7 @@ class Aligner():
     """
     Find an approximate match of the read in the reference.
     Pulls reads from the target_reads class.
-    """ 
+    """
     T = self.ref.R
     read = self.targ.get_read()
 
@@ -64,7 +68,7 @@ class Aligner():
           minIndels = mindels
           cutoff = [cut+left]
           transcripts = [transcript]
-        elif M == minEditDist:      
+        elif M == minEditDist:
           if mindels < minIndels:   # Trying to reduce # of indels
             minIndels = mindels
             cutoff = [cut + left]
@@ -99,13 +103,13 @@ class Aligner():
         cutoff += 1
 
 
-
   def alter_bwt(self,no_opt):
     """
     Alters the BWT dynamically based on the updates pending in the
     queue created in the align() method.
-    """
 
+    @param: boolean if true do no optimizations i.e use a static bwt & no dbwt
+    """
     changes = {"B":"A","D":"C","H":"G","U":"T"}
 
     while self.updates.qsize() > 0:
@@ -132,7 +136,7 @@ class Aligner():
         self.ref.R = T
 
       #CASE: OPTIMIZATION
-      else: 
+      else:
       # MAKE APPROPRIATE BWT UPDATES
         if ch in "ACGT" and T[spot] != ch:
           T = T[0:spot] + ch + T[spot+1:]
@@ -149,9 +153,6 @@ class Aligner():
           self.dbwt.delete_one(spot)
           print "DELETEE",spot
         self.ref.R = T
-
-
-
 
 
 def partition(read, k):

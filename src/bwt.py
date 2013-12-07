@@ -56,6 +56,11 @@ class BWT(object):
     """
     Return map from character to the range of rows prefixed by
     the character. Adapted from Prof. Ben Langmend's example code
+
+    @param tots: a list with the a mapping of each character to the number of times
+    it appears in F
+
+    @return the character and total list
     """
     first = {}
     totc = 0
@@ -68,6 +73,8 @@ class BWT(object):
     """
     Make T from BWT(T)
     Adapted from Prof. Ben Langmend's example code
+
+    @return: the original sequence given the bwt
     """
     ranks, tots = self.rank_bwt()
     first = self.first_col(tots)
@@ -84,6 +91,9 @@ class BWT(object):
     """
     Create a suffix array from a string s
     Adapted from Prof. Ben Langmend's example code
+
+    @param s: the sequence we will use to create the suffix array
+    @return: the actual suffix array
     """
     satups = sorted([(s[i:], i) for i in xrange(0, len(s))])
     self.suff_arr = map(lambda x: x[1], satups)
@@ -93,6 +103,9 @@ class BWT(object):
     """
     Given T, returns BWT(T) by way of the suffix array
     Adapted from Prof. Ben Langmend's example code
+
+    @param seq: the sequence we want to build the bwt from
+    @return: the BWT as a list
     """
     assert len(self.suff_arr) != 0, "The suffix array must be build first"
     for si in self.suff_arr:
