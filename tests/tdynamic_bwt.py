@@ -5,7 +5,8 @@
 # Email: disa@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 
-from src.dBWt import dBWT # TODO: Add src to path
+
+from src.dynamic_bwt import dBWT
 
 def test_move_row():
   """ Test the functionality of dbwt moverow """
@@ -18,7 +19,7 @@ def test_move_row():
 
   # Test Moverow
   print "Move row 1 to 4..."
-  f.moverow(f.F, f.L, 1, 4)
+  f.moverow(f.F, f.L, 1, 4, f.psums)
 
   print "After 1 ..."
   print "F:", f.F
@@ -29,7 +30,7 @@ def test_move_row():
   # Test move from begin to somewhere
   print "Test move row 0 to 6..."
 
-  f.moverow(f.F, f.L, 0, 6)
+  f.moverow(f.F, f.L, 0, 6, f.psums)
   print "F:", f.F
   print "L:", f.L
   assert f.F == ["A", "C", "C", "A", "G", "G", "$", "T", "T"] \
@@ -37,13 +38,13 @@ def test_move_row():
 
   # Test move somewhere to end
   print "Move row 2 to 7"
-  f.moverow(f.F, f.L, 2, 8)
+  f.moverow(f.F, f.L, 2, 8, f.psums)
   print "F:", f.F
   print "L:", f.L
 
   # Test move j > jp
   print "Move row 5 to 1"
-  f.moverow(f.F, f.L, 5, 1)
+  f.moverow(f.F, f.L, 5, 1, f.psums)
   print "F:", f.F
   print "L:", f.L
 
@@ -52,7 +53,7 @@ def test_move_row():
 
   # Test move somewhere to end
   print "Move row 8 to 0"
-  f.moverow(f.F, f.L, 8, 0)
+  f.moverow(f.F, f.L, 8, 0, f.psums)
   print "F:", f.F
   print "L:", f.L
 
@@ -60,3 +61,6 @@ def test_move_row():
     and f.L == ["$", "A", "T", "A", "T", "C", "C", "G", "G"], "Equiv Failure!"
 
   print "Test successfully completed!"
+
+if __name__ == "__main__":
+  test_move_row()

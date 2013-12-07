@@ -5,6 +5,7 @@
 # Email: disa@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 
+import scipy
 from scipy.sparse.csc import csc_matrix
 import numpy as np
 from exceptions import IndexError
