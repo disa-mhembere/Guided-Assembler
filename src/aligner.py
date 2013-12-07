@@ -56,7 +56,8 @@ class Aligner():
       if not hits:
         continue
       if None in hits:
-        pdb.set_trace()
+        self.dbwt = dynamic_bwt.dBWT(T)
+        return False
       for hit in hits:    # Query each partition exactly
         left = max(0,hit-poff-self.tol)
         right = min(len(T),hit-poff+len(read)+self.tol)
@@ -88,7 +89,7 @@ class Aligner():
       cutoff = cutoff[idx]
       transcripts = transcripts[idx]
     elif not cutoff:      # If NO choices, return flags to SKIP
-      return None
+      return True
     else:
       cutoff = cutoff[0]
       transcripts = transcripts[0]
@@ -104,6 +105,7 @@ class Aligner():
           self.updates.put([cutoff,nt])
       if nt not in "BDHU":
         cutoff += 1
+    return False
 
 
   def alter_bwt(self,no_opt):
@@ -146,17 +148,26 @@ class Aligner():
 
         if ch in "ACGT" and T[spot] != ch:
           T = T[0:spot] + ch + T[spot+1:]
-          self.dbwt.replace_one(ch,spot)
+          try:
+            self.dbwt.replace_one(ch,spot)
+          except:
+            self.dbwt = dynamic_bwt.dBWT(T)
           print "SWAP IN",ch,"AT",spot
         elif ch in "BDHU":
           T = T[0:spot] + changes[ch] + T[spot:]
           self.ref.insert_idx(spot)
-          self.dbwt.insert_one(changes[ch],spot)
+          try:
+            self.dbwt.insert_one(changes[ch],spot)
+          except:
+            self.dbwt = dynamic_bwt.dBWT(T)
           print "INSERT",changes[ch],"AT",spot
         else:
           T = T[0:spot] + T[spot+1:]
           self.ref.del_idx(spot)
-          self.dbwt.delete_one(spot)
+          try:
+            self.dbwt.delete_one(spot)
+          except:
+            self.dbwt = dynamic_bwt.dBWT(T)
           print "DELETEE",spot
         self.ref.R = T
 

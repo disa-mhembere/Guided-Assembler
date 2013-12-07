@@ -29,17 +29,20 @@ def assemble(reference, target, threshold, min_consensus,no_opt):
 
   failCount = 0
   failThresh = 100
+  counter = 0
   while(True):
     if failCount > failThresh:
       aligner.tol += 1
       failCount = 0
-    aligner.align() # STUB
+    fail = aligner.align() # STUB
     if aligner.ref.get_consensus(threshold) >= min_consensus: break
-    if aligner.updates.qsize()==0:
+    if fail:
       failCount+=1
-      continue
-    else:
+    elif aligner.updates.qsize() > 0:
       aligner.alter_bwt(no_opt) # STUB
+
+    counter = (counter + 1)%100
+    if counter==0: print "WOOP"
 
   return aligner
 
