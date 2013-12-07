@@ -89,7 +89,7 @@ class dBWT(BWT):
       row_to_fix = row_to_fix - 1
     jp = self.LF(Fp, Lp, row_to_fix, psumsp)
 
-    self.reorder(pos, Lp, Fp, j, jp, psumsp)
+    Lp,Fp,psumsp=self.reorder(pos, Lp, Fp, j, jp, psumsp)
 
     self.L = Lp
     self.F = Fp
@@ -128,6 +128,8 @@ class dBWT(BWT):
 
     self.psums[i_in_L,:] = [0]*self.psums.shape[1]; self.psums[i_in_L, self.psum_keys[char]] = 1
 
+
+
     Lp[i_in_L] = char # new char at i in L inserted (Ib)
 
     lf_isa_i = self.LF(Fp,Lp, i_in_L, self.psums)
@@ -139,16 +141,18 @@ class dBWT(BWT):
     # Fp = copy(self.F) # F' (F prime)
 
     # Lp[i_in_L] = char # new char at i in L inserted (Ib)
-    if lf_isa_i < len(Fp)-1:
-      Fp[lf_isa_i] = char # new char at LF(i) inserted in F
-      Lp[lf_isa_i] = curr_i # re-insert stored old char
-    else:
-      Fp = Fp + [char]
-      Lp = Lp + [curr_i]
-
-
+    #if lf_isa_i < len(Fp)-1:
+    Fp[lf_isa_i] = char # new char at LF(i) inserted in F
+    Lp[lf_isa_i] = curr_i # re-insert stored old char
     Fp[lf_isa_i+1:] = bottom_F
     Lp[lf_isa_i+1:] = bottom_L
+    # else:
+    #   print "YEA"
+    #   Fp = Fp + [char]
+    #   print Fp
+    #   Lp = Lp + [curr_i]
+    #   print Lp
+
 
     # TODO: Alter psums, self.sa
     # Stage 4 -> Reorder
@@ -169,9 +173,10 @@ class dBWT(BWT):
     if j >= lf_isa_i:
       j += 1
 
+
     jp = self.LF(Fp, Lp, lf_isa_i, psumsp)
 
-    self.reorder(pos, Lp, Fp, j, jp, psumsp)
+    Lp,Fp,psumsp = self.reorder(pos, Lp, Fp, j, jp, psumsp)
 
     self.L = Lp
     self.F = Fp
@@ -219,7 +224,6 @@ class dBWT(BWT):
       newj = self.LF(Fp, Lp, j, psumsp)
       Fp,Lp,psumsp = self.moverow(Fp, Lp, j, jp,psumsp)
 
-
       j = newj
 
       jp = self.LF(Fp, Lp, jp, psumsp)
@@ -227,6 +231,7 @@ class dBWT(BWT):
       # print "j --> %d" %j
       # print "jp --> %d" %jp
       # print "Moving row:%d to %d\n" % (j, jp)
+    return Lp,Fp,psumsp
 
   def moverow(self, F, L, j, jp, psums):
     """
@@ -262,6 +267,8 @@ class dBWT(BWT):
 
       psums[jp,:] = psums[j,:]
       psums[j:jp,:] = p_btwn
+
+
 
     return F, L, psums
 
@@ -435,7 +442,7 @@ def test(s):
   #print "psums:", f.psums[:,:].todense()
   #print "LCP:", f.lcp
   #print "ISA:", f.isa, "\n\n"
-  f.insert_one("G", 0)
+  f.insert_one("G", 2)
   #print "Original string:", f.get_seq()
   print "F:", f.F
   print "L:", f.L

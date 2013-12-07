@@ -55,7 +55,7 @@ class Target(object):
     # pick idx in target string where to start from
     idx = np.random.random_integers(0, high=len(self.T)-read_length)  # The range is inclusive
     num_trials = 0 # Never let this loop go beyond 5 attempts to find a read
-    while(self.seen[idx] > self.coverage/3 and num_trials < 5): # don't over-cover
+    while(self.seen[idx] > self.coverage and num_trials < 5): # don't over-cover
       idx = np.random.random_integers(0, high=len(self.T)-read_length) # The range is inclusive
       num_trials += 1
 
