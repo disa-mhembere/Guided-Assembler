@@ -10,6 +10,9 @@ import reference
 import numpy as np
 import random
 import Queue
+import assembler
+import math
+import reference
 class Aligner():
 
   def __init__(self, ref_str, target):
@@ -275,8 +278,10 @@ def kEdit(p,t,k):
 def test():
   from target_reads import Target
   targ = Target(p=0.03, read_length=6, T="ACTGTTGGGAGCCTTGTTGTCCAGGGTTAAACCCCC", coverage=20)
-  aligner = Aligner("ACTGTTGGAAAACCTTGTTGTACCCGGGTTAAACCCCC", targ)
-  aligner.align()  # should contain 3 large contigs: ACTGTTGG, CCTTGTTGT, GGGTTAAACCCCC
+  #aligner = Aligner("ACTGTTGGAAAACCTTGTTGTACCCGGGTTAAACCCCC", targ)
+  ref = reference.Reference("ACTGTTGGAAAACCTTGTTGTACCCGGGTTAAACCCCC")
+  aligner = assembler.assemble("ACTGTTGGAAAACCTTGTTGTACCCGGGTTAAACCCCC",targ,math.ceil(0.7*20),0.9,False)
+  #aligner.align()  # should contain 3 large contigs: ACTGTTGG, CCTTGTTGT, GGGTTAAACCCCC
   print "Here are your contigs:", aligner.ref.get_contigs(1) # TODO edit this thresh is higher
   #aligner.ref.plot_maxes(True) # Something wrong here even with coverage 20!
 
