@@ -16,7 +16,7 @@ from math import ceil
 import utils
 import random
 
-def assemble(reference, target, threshold, min_consensus):
+def assemble(reference, target, threshold, min_consensus,no_opt):
   """
   Run the assembler on data
 
@@ -28,23 +28,20 @@ def assemble(reference, target, threshold, min_consensus):
   """
   aligner = al.Aligner(reference, target)
 
-
   failCount = 0
-  failThresh = 200
+  failThresh = 100
   while(True):
     if failCount > failThresh:
       aligner.tol += 1
       failCount = 0
-    indicators,transcript = aligner.align() # STUB
-    if indicators == -1:
+    aligner.align() # STUB
+    if aligner.ref.get_consensus(threshold) >= min_consensus: break
+    if aligner.updates.qsize()==0:
       failCount+=1
       continue
-    if aligner.ref.get_consensus(threshold) >= min_consensus: break
     else:
-      if True in indicators: aligner.alter_bwt(indicators,transcript) # STUB
+      aligner.alter_bwt(no_opt) # STUB
 
-  #print "Sequence assembly complete!"
-  #print aligner.ref.match_count
   return aligner
 
 def eval_acc(target_seq, contigs):
@@ -59,7 +56,7 @@ def eval_acc(target_seq, contigs):
 
   for contig in contigs:
     M,a,b,c = al.kEdit(contig[0],target_seq,10**6)
-    #print "Contig",contig,"aligns with edit distance",M
+    print "Contig",contig,"aligns with edit distance",M
     
     if contig[1] >= idx:
       totalLen += len(contig[0])
@@ -84,19 +81,7 @@ def eval_acc(target_seq, contigs):
     recon_target += contig[0]
     last = len(recon_target)
 
-  # recon_target = recon_target.strip()
 
-    # # Eval accuracy
-    # for i, c in enumerate(recon_target[contig_idx:]):
-    #   if c == target_seq[i+contig_idx]:
-    #     matches += 1
-
-  #utils.edta(target_seq,recon_target)
-
-
-  #print "Reconstrution complete with %.3f%% accuracy ..." % ((matches/float(len(target_seq)))*100)
-  #print "Target = %s" % target_seq
-  #print "Rarget = %s" % recon_target
 
 def randStrings(n,corrupt):
   """
@@ -143,6 +128,7 @@ def main():
                           positions when assembly is performed. Default=0.75")
   parser.add_argument("-n", "--test_length",action="store",type=int,help="How long the test strings should be")
   parser.add_argument("-C", "--corruption", action="store",type=float,help="How much mutation in the test string")
+  parser.add_argument("-O1","--no_opt", action="store_true", help="Run without dBWT, only manual BWT.")
 
   parser.add_argument("-e", "--eval_acc", action="store_true", help="Given the correct target result evaluate the accuracy of the assembly")
   parser.add_argument("-P", "--plot", action="store_true", help="Display ALL plots visually. *Note: Causes os.system('pause') until figure is closed")  # TODO DM
@@ -159,8 +145,8 @@ def main():
     # sys.exit(0) # should terminate after test
 
     ref_seq,targ_seq = randStrings(result.test_length,result.corruption)
-    # print "REF:",ref_seq
-    # print "TAR:",targ_seq
+    print "REF:",ref_seq
+    print "TAR:",targ_seq
     if result.split_target:
       targ = tr.Target(result.prob, result.read_length, targ_seq, result.coverage)
     else:
@@ -168,7 +154,7 @@ def main():
 
     from time import time
     start = time()
-    aligner = assemble(rf.Reference(ref_seq).R, targ, ceil(result.threshold*result.coverage), result.min_consensus)
+    aligner = assemble(rf.Reference(ref_seq).R, targ, ceil(result.threshold*result.coverage), result.min_consensus,result.no_opt)
 
     print "Total assembly time taken %.f sec" % (time()-start)
 

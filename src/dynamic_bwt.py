@@ -52,7 +52,52 @@ class dBWT(BWT):
 
     @param pos: the position that should be deleted
     """
-    pass #TODO
+    assert isinstance(pos, int), "Position on deleted item must be an int"
+
+    row_to_del = self.suff_arr.index(pos)  # index where char appears in F
+    row_to_fix = self.suff_arr.index(pos+1)  # index where char appears in L
+
+    nextchar = self.L[row_to_del]
+    nextcharspot = self.LF(self.F,self.L,row_to_del,self.psums)
+
+    Lp = copy(self.L)
+    Fp = copy(self.F)
+
+    Lp[row_to_fix] = nextchar
+    Lp = Lp[0:row_to_del] + Lp[row_to_del+1:]
+    Fp = Fp[0:row_to_del] + Fp[row_to_del+1:]
+
+
+    psumsp = lil_matrix2((self.psums.shape[0]-1, self.psums.shape[1]), dtype=int)  # psums prime
+    psumsp[:row_to_del,:] = self.psums[:row_to_del,:]
+    if row_to_del < len(Lp)-1:
+      psumsp[row_to_del:,:] = self.psums[row_to_del+1:,:]
+    if row_to_fix < row_to_del:
+      psumsp[row_to_fix,:] = [0]*psumsp.shape[1]; psumsp[row_to_fix, self.psum_keys[nextchar]] = 1
+    else:
+      psumsp[row_to_fix-1,:] = [0]*psumsp.shape[1]; psumsp[row_to_fix-1, self.psum_keys[nextchar]] = 1
+
+
+
+    #j = self.get_rank(row_to_fix, nextchar, psumsp, False) + Fp.index(nextchar) # Compute the Expected LF value postion
+    j = nextcharspot
+    if j >= row_to_del:
+      j = j-1
+
+
+    if row_to_fix > row_to_del:
+      row_to_fix = row_to_fix - 1
+    jp = self.LF(Fp, Lp, row_to_fix, psumsp)
+
+    self.reorder(pos, Lp, Fp, j, jp, psumsp)
+
+    self.L = Lp
+    self.F = Fp
+    self.psums = psumsp
+
+    del Lp, Fp, psumsp # Free
+    self.updateSA_naive()
+
 
   def replace_one(self, char, pos):
     """
@@ -61,7 +106,7 @@ class dBWT(BWT):
     @param pos: the positon that where the replacement is to occur
     """
     self.delete_one(pos)
-    self.insert_one(char)
+    self.insert_one(char,pos)
 
   def insert_one(self, char, pos):
     """
@@ -77,17 +122,29 @@ class dBWT(BWT):
 
     curr_i = self.L[i_in_L] # get old char at i
 
-    lf_isa_i = self.LF(self.F, self.L, i_in_L, self.psums)
-
-    bottom_F = self.F[lf_isa_i:]
-    bottom_L = self.L[lf_isa_i:]
-
     Lp = copy(self.L) # L' (L prime = BWT')
     Fp = copy(self.F) # F' (F prime)
 
+    self.psums[i_in_L,:] = [0]*self.psums.shape[1]; self.psums[i_in_L, self.psum_keys[char]] = 1
+
     Lp[i_in_L] = char # new char at i in L inserted (Ib)
-    Fp[lf_isa_i] = char # new char at LF(i) inserted in F
-    Lp[lf_isa_i] = curr_i # re-insert stored old char
+
+    lf_isa_i = self.LF(Fp,Lp, i_in_L, self.psums)
+
+    bottom_F = Fp[lf_isa_i:]
+    bottom_L = Lp[lf_isa_i:]
+
+    # Lp = copy(self.L) # L' (L prime = BWT')
+    # Fp = copy(self.F) # F' (F prime)
+
+    # Lp[i_in_L] = char # new char at i in L inserted (Ib)
+    if lf_isa_i < len(Fp)-1:
+      Fp[lf_isa_i] = char # new char at LF(i) inserted in F
+      Lp[lf_isa_i] = curr_i # re-insert stored old char
+    else:
+      Fp = Fp + [char]
+      Lp = Lp + [curr_i]
+
 
     Fp[lf_isa_i+1:] = bottom_F
     Lp[lf_isa_i+1:] = bottom_L
@@ -95,15 +152,19 @@ class dBWT(BWT):
     # TODO: Alter psums, self.sa
     # Stage 4 -> Reorder
     psumsp = lil_matrix2((self.psums.shape[0]+1, self.psums.shape[1]), dtype=int)  # psums prime
-    psumsp[:i_in_L,:] = self.psums[:i_in_L,:]
-    psumsp[i_in_L,:] = [0]*psumsp.shape[1]; psumsp[i_in_L, self.psum_keys[char]] = 1
-    psumsp[i_in_L+1:,:] = self.psums[i_in_L:,:]
+    psumsp[:lf_isa_i,:] = self.psums[:lf_isa_i,:]
+    psumsp[lf_isa_i,:] = [0]*psumsp.shape[1]; psumsp[lf_isa_i, self.psum_keys[curr_i]] = 1   
+    try:
+      psumsp[lf_isa_i+1:,:] = self.psums[lf_isa_i:,:]
+    except:
+      pass
 
-    print "\n Before reorder:"
-    print "Lp:", Lp
-    print "Fp:", Fp
+    #j = self.get_rank(i_in_L, char, psumsp, False) + Fp.index(char) # Compute the Expected LF value postion
+    if pos > 0:
+      j = self.suff_arr.index(pos-1)
+    else:
+      j = 0
 
-    j = self.get_rank(i_in_L, char, psumsp, False) + Fp.index(char) # Compute the Expected LF value postion
     if j >= lf_isa_i:
       j += 1
 
@@ -117,6 +178,7 @@ class dBWT(BWT):
 
     del Lp, Fp, psumsp # Free
     self.updateSA_naive()
+
 
   def updateSA_naive(self,):
     """
@@ -149,26 +211,22 @@ class dBWT(BWT):
     @param psumsp: the partial sums' (prime)
     """
 
-    print "1st j --> %d" % j
-    print "1st jp -> %d\n" % jp
+    # print "1st j --> %d" % j
+    # print "1st jp -> %d\n" % jp
     while not j == jp:
       newj = self.LF(Fp, Lp, j, psumsp)
-      self.moverow(Fp, Lp, j, jp)
+      Fp,Lp,psumsp = self.moverow(Fp, Lp, j, jp,psumsp)
 
-      # recompute psumsp
-      tmp = psumsp[jp,:]
-      psumsp[jp,:] = psumsp[j,:]
-      psumsp[j,:] = tmp
 
       j = newj
 
       jp = self.LF(Fp, Lp, jp, psumsp)
 
-      print "j --> %d" %j
-      print "jp --> %d" %jp
-      print "Moving row:%d to %d\n" % (j, jp)
+      # print "j --> %d" %j
+      # print "jp --> %d" %jp
+      # print "Moving row:%d to %d\n" % (j, jp)
 
-  def moverow(self, F, L, j, jp):
+  def moverow(self, F, L, j, jp, psums):
     """
     Take F and L and move row jp to j and moving others as necessary
 
@@ -180,25 +238,34 @@ class dBWT(BWT):
     @return: the new F and L with rows j & p switched
     """
     if j == jp:
-      print "NOP" # TODO:rm
+      #print "NOP" # TODO:rm
       return
 
     # gets rows in betwix j & jp
     if j > jp:
-      F_btwn = F[jp:j]; L_btwn = L[jp:j]
-      F[jp] = F[j]; L[jp] = L[j]
-      F[jp+1:j+1] = F_btwn; L[jp+1:j+1] = L_btwn
+      F_btwn = F[jp:j]; L_btwn = L[jp:j]; p_btwn = psums[jp:j,:]
+      F[jp] = F[j]; L[jp] = L[j]; psums[jp,:] = psums[j,:]
+      F[jp+1:j+1] = F_btwn; L[jp+1:j+1] = L_btwn; psums[jp+1:j+1,:] = p_btwn
 
     else:
       F_btwn = F[j+1:jp]; F_btwn.append(F[jp])
       L_btwn = L[j+1:jp]; L_btwn.append(L[jp])
+
+      p_btwn = lil_matrix2((len(F_btwn), psums.shape[1]), dtype=int)
+
+      if len(F_btwn) > 1: p_btwn[:-1,:] = psums[j+1:jp,:]
+      p_btwn[-1,:] = psums[jp,:]
+
 
       F[jp] = F[j]
       L[jp] = L[j]
       F[j:jp] = F_btwn
       L[j:jp] = L_btwn
 
-    return F, L
+      psums[jp,:] = psums[j,:]
+      psums[j:jp,:] = p_btwn
+
+    return F, L, psums
 
   def LF(self, F, L, i, psums):
     """
@@ -342,7 +409,8 @@ def test_move_row():
     and f.L == ["$", "A", "T", "A", "T", "C", "C", "G", "G"], "Equiv Failure!"
 
 def test(s):
-  f = dBWT(s, True)
+  print s
+  f = dBWT(s)
 
   print "F:", f.F
   print "L:", f.L
@@ -352,17 +420,28 @@ def test(s):
   #print "psums:", f.psums[:,:].todense()
   #print "LCP:", f.lcp
   #print "ISA:", f.isa, "\n\n"
-  f.insert_one("G", 2)
+  f.insert_one("G", 0)
   #print "Original string:", f.get_seq()
 
   print "F:", f.F
   print "L:", f.L
+  print "P:", f.psums
 
   print "Suffix array", f.suff_arr
   # search for matches
 
   #print "Positons of matches:", f.match("ABA")
   #print "Positons of matches:", f.match("ACT") # should return 3 6 12 given GGAACTACTGGTACT
+
+
+  #f.delete_one(2)
+  print "F:", f.F
+  print "L:",f.L
+
+  #should get from CTCTGC to CTGTGC
+  #f.replace_one("G",2)
+  print "F:",f.F
+  print "L:",f.L
 
 
 if __name__ == "__main__":

@@ -9,7 +9,8 @@ import dynamic_bwt
 import reference
 import numpy as np
 import random
-
+import Queue
+import pdb
 class Aligner():
 
   def __init__(self, ref_str, target):
@@ -22,6 +23,8 @@ class Aligner():
 
     self.tol = 0      # Set error tolerance here...
 
+    self.updates = Queue.Queue()
+
 
   def align(self):
     """
@@ -30,8 +33,6 @@ class Aligner():
     """ 
     T = self.ref.R
     read = self.targ.get_read()
-
-    #print "READ!",read
 
     K = 2
     parts,poffs = partition(read,K)
@@ -47,6 +48,7 @@ class Aligner():
       hits = self.dbwt.match(str(part))
       if not hits:
         continue
+      if None in hits: pdb.set_trace()
       for hit in hits:    # Query each partition exactly
         left = max(0,hit-poff-self.tol)
         right = min(len(T),hit-poff+len(read)+self.tol)
@@ -78,66 +80,75 @@ class Aligner():
       cutoff = cutoff[idx]
       transcripts = transcripts[idx]
     elif not cutoff:      # If NO choices, return flags to SKIP
-      return -1,False
+      return None
     else:
       cutoff = cutoff[0]
       transcripts = transcripts[0]
 
     if minEditDist == 0: self.targ._update_seen(cutoff)
 
-    # print "Cutoff:",cutoff
-    # print "Transcript:",transcripts
-    # print "Error:",minEditDist
+
 
 
     ### NOW UPDATE REFERENCE...
-    indicators = [cutoff]
     lenny = len(self.ref.R)
     for nt in transcripts:
       if cutoff < lenny:
-        indicators.append(self.ref.match(cutoff,nt))
-      else:
-        indicators.append(False)
+        if self.ref.match(cutoff,nt): self.updates.put([cutoff,nt])
       if nt not in "BDHU":
         cutoff += 1
 
-    #print self.ref.match_count
-    return indicators,transcripts
 
 
-  def alter_bwt(self, indicators,transcript):
+  def alter_bwt(self,no_opt):
+    """
+    Alters the BWT dynamically based on the updates pending in the
+    queue created in the align() method.
+    """
 
     changes = {"B":"A","D":"C","H":"G","U":"T"}
 
-    # REF string
-    T = self.ref.R
+    while self.updates.qsize() > 0:
+      T = self.ref.R
+      up = self.updates.get()   #up = [spot,nt]
+      spot = up[0]
+      ch = up[1]
 
-    cutoff = indicators[0]
-    for i in xrange(len(transcript)):    # ind being True means UPDATE BWT
-      ind = indicators[i+1]
-      ch = transcript[i]
-      if ind:
-        if ch in "ACGT" and T[cutoff] != ch:
-          #print "CHANGING T at",cutoff,"from",T[cutoff],"to",ch,"with tol",self.tol
-          T = T[0:cutoff] + ch + T[cutoff+1:]
-          #self.ref.zero_idx(cutoff)
-          cutoff += 1
+      #CASE: NO OPTIMIZATION
+      if no_opt:
+              # MAKE APPROPRIATE BWT UPDATES
+        if ch in "ACGT" and T[spot] != ch:
+          T = T[0:spot] + ch + T[spot+1:]
+          print "SWAP IN",ch,"AT",spot
         elif ch in "BDHU":
-          T = T[0:cutoff] + changes[ch] + T[cutoff:]
-          self.ref.insert_idx(cutoff)
-          cutoff += 1
+          T = T[0:spot] + changes[ch] + T[spot:]
+          self.ref.insert_idx(spot)
+          print "INSERT",changes[ch],"AT",spot
         else:
-          T = T[0:cutoff] + T[cutoff+1:]
-          self.ref.del_idx(cutoff)
-
+          T = T[0:spot] + T[spot+1:]
+          self.ref.del_idx(spot)
+          print "DELETEE",spot
         self.dbwt = dynamic_bwt.dBWT(T)
         self.ref.R = T
-      elif ch not in "BDHU":
-        cutoff += 1
 
-
-
-
+      #CASE: OPTIMIZATION
+      else: 
+      # MAKE APPROPRIATE BWT UPDATES
+        if ch in "ACGT" and T[spot] != ch:
+          T = T[0:spot] + ch + T[spot+1:]
+          self.dbwt.replace_one(ch,spot)
+          print "SWAP IN",ch,"AT",spot
+        elif ch in "BDHU":
+          T = T[0:spot] + changes[ch] + T[spot:]
+          self.ref.insert_idx(spot)
+          self.dbwt.insert_one(changes[ch],spot)
+          print "INSERT",changes[ch],"AT",spot
+        else:
+          T = T[0:spot] + T[spot+1:]
+          self.ref.del_idx(spot)
+          self.dbwt.delete_one(spot)
+          print "DELETEE",spot
+        self.ref.R = T
 
 
 
