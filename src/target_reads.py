@@ -100,7 +100,8 @@ class Target(object):
     @param idx: The start index of the target string from where we just extracted a read
     """
     assert isinstance(idx, int), "Index must be an integer"
-    self.seen[idx] += 1
+    if idx < len(self.T):
+      self.seen[idx] += 1
     #self.seen[idx:idx+self.read_length] = map(pp, self.seen[idx:idx+self.read_length])
 
   def get_read_list(self, **kwargs):

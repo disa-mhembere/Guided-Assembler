@@ -64,10 +64,9 @@ def eval_acc(target_seq, contigs):
   for contig in contigs:
     M = al.kEdit(contig[0],target_seq,10**6)[0]
 
-    contig_counter = map(utils.pp, contig_counter[contig[1]:(contig[1]+len(contig))])
+    contig_counter[contig[1]:(contig[1]+len(contig[0]))]= map(utils.pp, contig_counter[contig[1]:(contig[1]+len(contig[0]))])
     totalEdit += M
-
-  sys.stdout.write("%f,%d\n" % (float(np.where(np.array(l) > 0)[0].shape[0])/len(target_seq),totalEdit))
+  sys.stdout.write("%f,%d\n" % (float(np.where(np.array(contig_counter) > 0)[0].shape[0])/len(target_seq),totalEdit))
 
   recon_target = ""
   recon_target += " "*contigs[0][1]
