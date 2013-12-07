@@ -5,6 +5,7 @@
 # Email: disa@jhu.edu, slee320@jhu.edu
 # Copyright (c) 2013. All rights reserved.
 import numpy as np
+import pdb
 
 class Reference(object):
   def __init__(self, R, data_counts=9):
@@ -21,7 +22,7 @@ class Reference(object):
     # keeps track of the letters that have landed at a particular index.
     self.match_count = np.zeros((len(R), self.dc))# 4 is for 'ACGTBDHU-' --STRICTLY in that order!
 
-  def match(self, idx, char, cnt=1, thresh=10):
+  def match(self, idx, char, cnt=1, thresh=7):
     """
     If there is a match in the reference at some position
 
@@ -33,7 +34,7 @@ class Reference(object):
     @return: True or False on (....something... TODO: SL)
     """
 
-    if char in "BDHU-": thresh = 30
+    if char in "BDHU-": thresh = 15
 
     assert idx >= 0 and idx < self.match_count.shape[0], "Out of bounds with index %d"%idx
 
@@ -45,8 +46,7 @@ class Reference(object):
     if char in "BDHU-" and self.match_count[idx,self.look_up[char]] > thresh:
       self.match_count[idx,self.look_up[char]] = 0
       return True
-    elif self.match_count[idx,self.look_up[char]] > max(maxElement,thresh)\
-       and self.R[idx] != char:
+    elif self.match_count[idx,self.look_up[char]] > max(maxElement,thresh) and self.R[idx] != char:
       return True
     else:
       return False

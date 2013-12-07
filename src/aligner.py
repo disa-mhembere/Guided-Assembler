@@ -13,6 +13,7 @@ import Queue
 import assembler
 import math
 import reference
+import pdb
 class Aligner():
 
   def __init__(self, ref_str, target):
@@ -54,7 +55,8 @@ class Aligner():
       hits = self.dbwt.match(str(part))
       if not hits:
         continue
-      if None in hits: pdb.set_trace()
+      if None in hits:
+        pdb.set_trace()
       for hit in hits:    # Query each partition exactly
         left = max(0,hit-poff-self.tol)
         right = min(len(T),hit-poff+len(read)+self.tol)
@@ -94,13 +96,12 @@ class Aligner():
     if minEditDist == 0: self.targ._update_seen(cutoff)
 
 
-
-
     ### NOW UPDATE REFERENCE...
     lenny = len(self.ref.R)
     for nt in transcripts:
       if cutoff < lenny:
-        if self.ref.match(cutoff,nt): self.updates.put([cutoff,nt])
+        if self.ref.match(cutoff,nt):
+          self.updates.put([cutoff,nt])
       if nt not in "BDHU":
         cutoff += 1
 

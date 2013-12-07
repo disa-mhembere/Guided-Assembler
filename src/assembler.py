@@ -149,7 +149,7 @@ def main():
     print "REF:",ref_seq
     print "TAR:",targ_seq
     if result.split_target:
-      targ = tr.Target(result.prob, result.read_length, targ_seq, result.coverage)
+      targ = tr.Target(result.prob, result.read_length, targ_seq, 5)
     else:
       assert False, "Target must be split at this point!"
 
@@ -159,8 +159,8 @@ def main():
 
     print "Total assembly time taken %.f sec" % (time()-start)
 
-    aligner.ref.build_hist(result.coverage, save=True)
-    aligner.ref.plot_maxes(True)
+    #aligner.ref.build_hist(result.coverage, save=True)
+    #aligner.ref.plot_maxes(True)
 
     if result.eval_acc:
       eval_acc(targ_seq, aligner.ref.get_contigs(ceil(result.threshold*result.coverage)))

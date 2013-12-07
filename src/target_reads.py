@@ -10,7 +10,7 @@ import random
 from copy import copy
 
 class Target(object):
-  def __init__(self, p, read_length, T, seed=None, coverage=5):
+  def __init__(self, p, read_length, T, seed=None, coverage=3):
     """
     An Object that enables the partitioning &generation of synthetically mutated
     data given a full Target sequence read
@@ -100,8 +100,8 @@ class Target(object):
     @param idx: The start index of the target string from where we just extracted a read
     """
     assert isinstance(idx, int), "Index must be an integer"
-
-    self.seen[idx:idx+self.read_length] = map(pp, self.seen[idx:idx+self.read_length])
+    self.seen[idx] += 1
+    #self.seen[idx:idx+self.read_length] = map(pp, self.seen[idx:idx+self.read_length])
 
   def get_read_list(self, **kwargs):
     """
