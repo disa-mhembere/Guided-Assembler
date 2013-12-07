@@ -135,14 +135,6 @@ class Target(object):
       np.save(save_fn, mutated_reads)
     return mutated_reads
 
-def pp(var):
-  """
-  Used in mapping operation for lists to ++ an index in the list
-  @param var: some integer
-  @return: plus one to value of var
-  """
-  return var + 1
-
 def test():
   seq = "acgttttacccgggttac"
   T = Target(p=0.01, read_length=6, T=seq, seed=1234, coverage=3)

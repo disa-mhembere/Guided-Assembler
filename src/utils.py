@@ -84,5 +84,13 @@ def edta(X,Y):
   print eX
   print eY
 
+def pp(var):
+  """
+  Used in mapping operation for lists to ++ an index in the list
+  @param var: some integer
+  @return: plus one to value of var
+  """
+  return var + 1
+
 if __name__ == "__main__":
   print "No main implementation for", __file__

@@ -8,7 +8,7 @@
 import argparse
 import sys
 import os
-
+import numpy as np
 import target_reads as tr
 import reference as rf
 import aligner as al
@@ -42,7 +42,7 @@ def assemble(reference, target, threshold, min_consensus,no_opt):
       aligner.alter_bwt(no_opt) # STUB
 
     counter = (counter + 1)%100
-    if counter==0: print "WOOP"
+    if counter==0: print "Assembler completed 100 (more) iterations ..."
 
   return aligner
 
@@ -57,24 +57,17 @@ def eval_acc(target_seq, contigs):
     print "No contigs found!"
     return
 
+  contig_counter = [0]*len(target_seq) # Use to determine how many postns have contigs associated
   totalEdit = 0
-  totalLen = 0
-
   idx = 0
 
   for contig in contigs:
-    M,a,b,c = al.kEdit(contig[0],target_seq,10**6)
-    if contig[1] >= idx:
-      totalLen += len(contig[0])
-      idx = contig[1] + len(contig[0])
-    else:
-      totalLen += max(0,len(contig[0])-(idx-contig[1]))
-      idx = max(idx,contig[1]+len(contig[0]))
+    M = al.kEdit(contig[0],target_seq,10**6)[0]
 
+    contig_counter = map(utils.pp, contig_counter[contig[1]:(contig[1]+len(contig))])
     totalEdit += M
-  del a,b,c
 
-  sys.stdout.write("%f,%d\n" % (float(totalLen)/len(target_seq),totalEdit))
+  sys.stdout.write("%f,%d\n" % (float(np.where(np.array(l) > 0)[0].shape[0])/len(target_seq),totalEdit))
 
   recon_target = ""
   recon_target += " "*contigs[0][1]
@@ -86,8 +79,6 @@ def eval_acc(target_seq, contigs):
     recon_target += " "*(contig_idx-last)
     recon_target += contig[0]
     last = len(recon_target)
-
-
 
 def randStrings(n,corrupt):
   """
