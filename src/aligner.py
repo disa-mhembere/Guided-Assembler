@@ -141,6 +141,9 @@ class Aligner():
       #CASE: OPTIMIZATION
       else:
       # MAKE APPROPRIATE BWT UPDATES
+        if spot >= len(T):
+          continue
+
         if ch in "ACGT" and T[spot] != ch:
           T = T[0:spot] + ch + T[spot+1:]
           self.dbwt.replace_one(ch,spot)

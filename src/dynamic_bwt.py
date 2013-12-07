@@ -363,7 +363,7 @@ def test(s):
   print "F:", f.F
   print "L:", f.L
 
-  f.insert_one("G", 2)
+  f.insert_one("G", 0)
   #print "Original string:", f.get_seq()
   print "F:", f.F
   print "L:", f.L
