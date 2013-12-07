@@ -119,7 +119,7 @@ def main():
   parser.add_argument("-s", "--split_target", action="store_true", help="Run with a target that must be split and have SNPs added")
   parser.add_argument("-c", "--coverage", action="store", type=int, default=10, help="The ideal average coverage. Default=10")
   parser.add_argument("-p", "--prob", action="store", type=float, default=0.05, help="prob of an SNP occuring in an target. Default=0.05")
-  parser.add_argument("-O", "--output_filename", action="store", help="If we want output written to disk instead of stdout") # TODO DM
+  parser.add_argument("-O", "--output_filename", action="store", help="If we want output written to disk instead of stdout. UNIMPLEMENTED") # TODO DM
   parser.add_argument("-m", "--min_consensus", action="store", type=float, default=0.75, help="Minimum fraction of consensus for all\
                           positions when assembly is performed. Default=0.75")
   parser.add_argument("-n", "--test_length",action="store",type=int,help="How long the test strings should be")
@@ -127,9 +127,9 @@ def main():
   parser.add_argument("-O1","--no_opt", action="store_true", help="Run without dBWT, only manual BWT.")
 
   parser.add_argument("-e", "--eval_acc", action="store_true", help="Given the correct target result evaluate the accuracy of the assembly")
-  parser.add_argument("-P", "--plot", action="store_true", help="Display ALL plots visually. *Note: Causes os.system('pause') until figure is closed")  # TODO DM
-  parser.add_argument("-S", "--save_figs", action="store_true", help="Save figures to disk? Boolean")  # TODO DM
-  parser.add_argument("-F", "--figure_name", action="store", help="Save figures to disk with this file name. If this is set the -S is unnessary")# TODO DM
+  parser.add_argument("-P", "--plot", action="store_true", help="Display ALL plots visually. *Note: Causes os.system('pause') until figure is closed")
+  parser.add_argument("-S", "--save_figs", action="store_true", help="Save figures to disk? Boolean") 
+  parser.add_argument("-F", "--figure_name", action="store", default="plot", help="Save figures to disk with this file name. If this is set the -S is unnessary")
 
   result = parser.parse_args()
 
@@ -151,9 +151,10 @@ def main():
     aligner = assemble(rf.Reference(ref_seq).R, targ, ceil(result.threshold*result.coverage), result.min_consensus,result.no_opt)
 
     print "Total assembly time taken %.f sec" % (time()-start)
-
-    #aligner.ref.build_hist(result.coverage, save=True)
-    #aligner.ref.plot_maxes(True)
+    
+    if result.plot:
+      aligner.ref.build_hist(result.coverage, save=result.save_figs, save_fn=result.figure_name+"_hist")
+      aligner.ref.plot_maxes(save=result.save_figs, save_fn=result.figure_name+"_maxes")
 
     if result.eval_acc:
       eval_acc(targ_seq, aligner.ref.get_contigs(ceil(result.threshold*result.coverage)))
