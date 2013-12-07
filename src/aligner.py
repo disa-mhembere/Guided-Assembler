@@ -10,7 +10,6 @@ import reference
 import numpy as np
 import random
 import Queue
-import pdb
 class Aligner():
 
   def __init__(self, ref_str, target):
@@ -19,7 +18,7 @@ class Aligner():
     related to target string. i.e. reads to be aligned
 
     @param ref_str: the reference string
-    @param target: the target string
+    @param target: the target object (Not string)
     """
     self.dbwt = dynamic_bwt.dBWT(ref_str) # contains SA, LF, get_LF
     self.ref = reference.Reference(ref_str)
@@ -163,7 +162,7 @@ def partition(read, k):
   @param k: Number of parts for the partition
   """
 
-  assert len(read)%k is 0
+  assert len(read)%k == 0, "(Read length %% %d) cannot equal zero!" %k
   partlen = len(read)/k
   parts = []
   poffs = []
@@ -274,8 +273,12 @@ def kEdit(p,t,k):
 
 
 def test():
-  aligner = Aligner("ACTGTTGGAAAACCTTGTTGTACCCGGGTTAAACCCCC")
-  aligner.align("CCTTGTTGT") # Should be exact match of idx 11 if read lengths are 5
+  from target_reads import Target
+  targ = Target(p=0.03, read_length=6, T="ACTGTTGGGAGCCTTGTTGTCCAGGGTTAAACCCCC", coverage=20)
+  aligner = Aligner("ACTGTTGGAAAACCTTGTTGTACCCGGGTTAAACCCCC", targ)
+  aligner.align()  # should contain 3 large contigs: ACTGTTGG, CCTTGTTGT, GGGTTAAACCCCC
+  print "Here are your contigs:", aligner.ref.get_contigs(1) # TODO edit this thresh is higher
+  #aligner.ref.plot_maxes(True) # Something wrong here even with coverage 20!
 
 if __name__ == "__main__":
   test()

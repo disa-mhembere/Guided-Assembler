@@ -169,4 +169,7 @@ def main():
 
 
 if __name__ == "__main__":
-  test(sys.argv[1])
+  if len(sys.argv) < 2:
+    print "Testing dBWT with default \"CTCTGC\" ... Pass cmd line arg to alter test"
+    test("CTCTGC")
+  else: test(sys.argv[1])
