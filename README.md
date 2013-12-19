@@ -4,6 +4,8 @@ Guided-Assembler
 Final project for computational genomics. If you view in github, it's a lot prietter :)
 
 This is a Guided/Assisted assembler for genomic sequences using a dynamic bwt (FM Index) that iteratively updates a reference sequence in an honest attempt to grow contiguous regions of dna (contigs) that are exact or near matches. This README serves several purposes:
+
+
 1. Inform those who may stumble upon this of what they are looking at.
 2. Comply with final project guidelines which state we should have a README (Hi Ben! Hi Kyle :-D).
 3. Inform all that this is not an optimized code base yet, the emphasis is on functionality and accuracy in contig recognition.
@@ -36,7 +38,8 @@ To reproduce Figure 2. in the paper, where we compare dynamic BWT to a static BW
 for the static and
 <pre> python assembler.py _ _ -r 30 -t -s -c 20 -p 0.01 -m 0.9 -n NT_SIZE -C 0.5 -e </pre>  for the dynamic.
 
-We iterate through `NT_SIZE` values in `[150, 250, 300, 350, 400, 450, 500]` for both static and dynamic. *Note:* Relaxing the `-m` (accuracy required for completion) value will lead to quicker completion times.
+We iterate through `NT_SIZE` values in <pre>[150, 250, 300, 350, 400, 450, 500]</pre> for both static and dynamic.
+*Note:* Relaxing the `-m` (accuracy required for completion) value will lead to quicker completion times.
 
 To reproduce Images like Figure 3, 4 an example would be:
 <pre> python assembler.py _ _ -r 30 -t -s -c 20 -p 0.01 -m 0.75 -n 100 -C 0.5 -e -P -S -F p100 </pre>  
