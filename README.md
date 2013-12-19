@@ -36,9 +36,13 @@ To run a full assembly you should use the script `assembler.py`. The best way to
 To reproduce Figure 2. in the paper, where we compare dynamic BWT to a static BWT updating reference, we used 
 <pre> python assembler.py _ _ -r 30 -t -s -c 20 -p 0.01 -m 0.9 -n NT_SIZE -C 0.5 -e -O1 </pre> 
 for the static and
-<pre> python assembler.py _ _ -r 30 -t -s -c 20 -p 0.01 -m 0.9 -n NT_SIZE -C 0.5 -e </pre>  for the dynamic.
+<pre> python assembler.py _ _ -r 30 -t -s -c 20 -p 0.01 -m 0.9 -n NT_SIZE -C 0.5 -e </pre> for the dynamic.
 
-We iterate through `NT_SIZE` values in <pre>[150, 250, 300, 350, 400, 450, 500]</pre> for both static and dynamic.
+
+We iterate through `NT_SIZE` values in 
+<pre>[150, 250, 300, 350, 400, 450, 500]</pre> for both static and dynamic.
+
+
 *Note:* Relaxing the `-m` (accuracy required for completion) value will lead to quicker completion times.
 
 To reproduce Images like Figure 3, 4 an example would be:
