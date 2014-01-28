@@ -7,7 +7,7 @@ This is a Guided/Assisted assembler for genomic sequences using a dynamic bwt (F
 
 
 1. Inform those who may stumble upon this of what they are looking at.
-2. Comply with final project guidelines which state we should have a README (Hi Ben! Hi Kyle :-D).
+2. Comply with final project guidelines which state we should have a README.
 3. Inform all that this is not an optimized code base yet, the emphasis is on functionality and accuracy in contig recognition.
 4. Inform those that decide to pull/fork etc that this code comes with no warranty of anything.
 
